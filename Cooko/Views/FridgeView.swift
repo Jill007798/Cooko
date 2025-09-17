@@ -6,6 +6,7 @@ struct FridgeView: View {
     @State private var showAdd = false
 
     let columns = [GridItem(.flexible(), spacing: 12),
+                   GridItem(.flexible(), spacing: 12),
                    GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
@@ -35,7 +36,7 @@ struct FridgeView: View {
                     // 今日靈感（小卡）
                     inspirationCard
 
-                    LazyVGrid(columns: columns, spacing: 16) {
+                    LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(vm.items) { item in
                             FoodCard(item: item) {
                                 vm.markUsed(item)

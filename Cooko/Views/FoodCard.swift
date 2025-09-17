@@ -66,6 +66,6 @@ struct FoodCard: View {
             }
             .padding(16)
         }
-        .frame(height: 160)
+        .frame(height: 140)
     }
 }
