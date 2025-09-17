@@ -11,7 +11,8 @@ import SwiftUI
 struct CookoApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            FridgeView()
+                .preferredColorScheme(.light)
         }
     }
 }

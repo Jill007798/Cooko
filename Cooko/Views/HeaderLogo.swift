@@ -2,20 +2,15 @@ import SwiftUI
 
 struct HeaderLogo: View {
     var body: some View {
-        HStack {
-            Image(systemName: "leaf.fill")
-                .font(.title2)
-                .foregroundColor(.primaryGreen)
-            
+        VStack(spacing: 2) {
             Text("Cooko")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.olive)
+            Text("可可廚師")
+                .font(.footnote)
+                .foregroundStyle(Color.warmGray)
         }
+        .padding(.top, 4)
+        .accessibilityAddTraits(.isHeader)
     }
-}
-
-#Preview {
-    HeaderLogo()
-        .padding()
 }

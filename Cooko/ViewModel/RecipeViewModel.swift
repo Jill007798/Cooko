@@ -1,62 +1,23 @@
-import Foundation
 import SwiftUI
 
 @MainActor
-class RecipeViewModel: ObservableObject {
+final class RecipeViewModel: ObservableObject {
     @Published var recipes: [Recipe] = []
-    @Published var filteredRecipes: [Recipe] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var selectedTags: Set<String> = []
-    
-    private let recipeService = RecipeService()
-    
-    init() {
-        loadRecipes()
-    }
-    
-    func loadRecipes() {
+
+    private let service = RecipeService()
+
+    func generate(from foods: [FoodItem]) async {
         isLoading = true
-        Task {
-            do {
-                let fetchedRecipes = try await recipeService.fetchRecipes()
-                await MainActor.run {
-                    self.recipes = fetchedRecipes
-                    self.filteredRecipes = fetchedRecipes
-                    self.isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                }
-            }
+        errorMessage = nil
+        do {
+            // 先用假資料（本地生成），之後再切換真 API
+            let result = try await service.mockRecipes(from: foods)
+            self.recipes = result
+        } catch {
+            self.errorMessage = error.localizedDescription
         }
-    }
-    
-    func filterRecipes(by availableIngredients: [FoodItem]) {
-        // TODO: Implement recipe filtering based on available ingredients
-        filteredRecipes = recipes
-    }
-    
-    func toggleTag(_ tag: String) {
-        if selectedTags.contains(tag) {
-            selectedTags.remove(tag)
-        } else {
-            selectedTags.insert(tag)
-        }
-        applyTagFilter()
-    }
-    
-    private func applyTagFilter() {
-        if selectedTags.isEmpty {
-            filteredRecipes = recipes
-        } else {
-            filteredRecipes = recipes.filter { recipe in
-                recipe.tags.contains { tag in
-                    selectedTags.contains(tag)
-                }
-            }
-        }
+        isLoading = false
     }
 }

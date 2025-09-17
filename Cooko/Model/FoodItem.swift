@@ -1,31 +1,23 @@
 import Foundation
 
-struct FoodItem: Identifiable, Codable {
-    let id = UUID()
-    let name: String
-    let category: FoodCategory
-    let expirationDate: Date
-    let quantity: String
-    let unit: String
-    let addedDate: Date
-    
-    enum FoodCategory: String, CaseIterable, Codable {
-        case vegetables = "Vegetables"
-        case fruits = "Fruits"
-        case dairy = "Dairy"
-        case meat = "Meat"
-        case grains = "Grains"
-        case spices = "Spices"
-        case other = "Other"
-    }
+enum StorageLocation: String, Codable, CaseIterable {
+    case fridge = "冷藏"
+    case freezer = "冷凍"
+    case pantry  = "常溫"
 }
 
-extension FoodItem {
-    var isExpired: Bool {
-        expirationDate < Date()
-    }
-    
-    var daysUntilExpiration: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: expirationDate).day ?? 0
+struct FoodItem: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var name: String
+    var emoji: String?     // 有就顯示，無則顯示 icon
+    var quantity: Int
+    var unit: String       // 顆、盒、串...
+    var location: StorageLocation
+    var expiry: Date?      // 可為空
+    var createdAt = Date()
+
+    var isExpiringSoon: Bool {
+        guard let d = expiry else { return false }
+        return Calendar.current.dateComponents([.day], from: Date(), to: d).day ?? 99 <= 2
     }
 }

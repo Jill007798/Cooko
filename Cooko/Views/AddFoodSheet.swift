@@ -1,73 +1,56 @@
 import SwiftUI
 
 struct AddFoodSheet: View {
-    @ObservedObject var viewModel: FridgeViewModel
-    @Environment(\.dismiss) private var dismiss
-    
+    @Environment(\.dismiss) var dismiss
+    var onAdd: (FoodItem) -> Void
+
     @State private var name = ""
-    @State private var selectedCategory = FoodItem.FoodCategory.vegetables
-    @State private var quantity = ""
-    @State private var unit = ""
-    @State private var expirationDate = Date()
-    
+    @State private var emoji = ""
+    @State private var quantity = 1
+    @State private var unit = "顆"
+    @State private var location: StorageLocation = .fridge
+    @State private var expiry: Date? = nil
+    @State private var hasExpiry = false
+
+    let units = ["顆","盒","串","袋","份"]
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
-                Section("Food Details") {
-                    TextField("Food name", text: $name)
-                    
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(FoodItem.FoodCategory.allCases, id: \.self) { category in
-                            Text(category.rawValue).tag(category)
-                        }
-                    }
-                    
-                    HStack {
-                        TextField("Quantity", text: $quantity)
-                            .keyboardType(.decimalPad)
-                        
-                        TextField("Unit", text: $unit)
-                    }
+                TextField("名稱（例如：雞蛋）", text: $name)
+                TextField("Emoji（可留空）", text: $emoji)
+                Picker("單位", selection: $unit) { ForEach(units, id: \.self, content: Text.init) }
+                Stepper("數量：\(quantity)", value: $quantity, in: 0...99)
+                Picker("存放位置", selection: $location) {
+                    ForEach(StorageLocation.allCases, id: \.self) { Text($0.rawValue) }
                 }
-                
-                Section("Expiration") {
-                    DatePicker("Expiration Date", selection: $expirationDate, displayedComponents: .date)
+                Toggle("有到期日", isOn: $hasExpiry)
+                if hasExpiry {
+                    DatePicker("到期日", selection: Binding(get: {
+                        expiry ?? Date().addingTimeInterval(60*60*24*3)
+                    }, set: { expiry = $0 }), displayedComponents: .date)
                 }
             }
-            .navigationTitle("Add Food")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("新增食材")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveFoodItem()
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("加入") {
+                        let item = FoodItem(
+                            name: name.isEmpty ? "未命名食材" : name,
+                            emoji: emoji.isEmpty ? nil : emoji,
+                            quantity: quantity,
+                            unit: unit,
+                            location: location,
+                            expiry: hasExpiry ? expiry : nil
+                        )
+                        onAdd(item); dismiss()
                     }
-                    .disabled(name.isEmpty || quantity.isEmpty || unit.isEmpty)
+                    .disabled(name.isEmpty && emoji.isEmpty)
                 }
             }
         }
     }
-    
-    private func saveFoodItem() {
-        let newFoodItem = FoodItem(
-            name: name,
-            category: selectedCategory,
-            expirationDate: expirationDate,
-            quantity: quantity,
-            unit: unit,
-            addedDate: Date()
-        )
-        
-        viewModel.addFoodItem(newFoodItem)
-        dismiss()
-    }
-}
-
-#Preview {
-    AddFoodSheet(viewModel: FridgeViewModel())
 }

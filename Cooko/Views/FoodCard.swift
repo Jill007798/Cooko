@@ -1,80 +1,46 @@
 import SwiftUI
 
 struct FoodCard: View {
-    let foodItem: FoodItem
-    @State private var showingEditSheet = false
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(foodItem.name)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Text(foodItem.category.rawValue)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text("Quantity: \(foodItem.quantity) \(foodItem.unit)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(expirationText)
-                    .font(.caption)
-                    .foregroundColor(expirationColor)
-                
-                Text("Added: \(foodItem.addedDate, style: .date)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding()
-        .background(Color.backgroundGray)
-        .cornerRadius(Theme.cornerRadius)
-        .onTapGesture {
-            showingEditSheet = true
-        }
-        .sheet(isPresented: $showingEditSheet) {
-            // TODO: Add EditFoodSheet
-            Text("Edit Food Item")
-        }
-    }
-    
-    private var expirationText: String {
-        if foodItem.isExpired {
-            return "Expired"
-        } else if foodItem.daysUntilExpiration == 0 {
-            return "Expires today"
-        } else if foodItem.daysUntilExpiration == 1 {
-            return "Expires tomorrow"
-        } else {
-            return "Expires in \(foodItem.daysUntilExpiration) days"
-        }
-    }
-    
-    private var expirationColor: Color {
-        if foodItem.isExpired {
-            return .red
-        } else if foodItem.daysUntilExpiration <= 2 {
-            return .orange
-        } else {
-            return .green
-        }
-    }
-}
+    let item: FoodItem
+    var onUse: (() -> Void)?
 
-#Preview {
-    FoodCard(foodItem: FoodItem(
-        name: "Fresh Tomatoes",
-        category: .vegetables,
-        expirationDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date(),
-        quantity: "5",
-        unit: "pieces",
-        addedDate: Date()
-    ))
-    .padding()
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial)   // 玻璃質感
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.white.opacity(0.4), lineWidth: 1)
+                )
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(item.emoji ?? "🍽️")
+                        .font(.title3)
+                    Spacer()
+                    if item.isExpiringSoon {
+                        TagChip(text: "快過期", color: .warnOrange)
+                    } else {
+                        TagChip(text: "新鮮", color: .olive)
+                    }
+                }
+                Text(item.name)
+                    .font(.headline)
+                    .foregroundStyle(Color.charcoal)
+                Text("\(item.quantity) \(item.unit)")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.charcoal.opacity(0.8))
+                Spacer(minLength: 0)
+                Button {
+                    onUse?()
+                } label: {
+                    Label("煮掉了", systemImage: "checkmark.circle")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.olive)
+                .font(.caption)
+            }
+            .padding(12)
+        }
+        .frame(height: 150)
+    }
 }
