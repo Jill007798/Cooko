@@ -2,15 +2,11 @@ import SwiftUI
 
 struct HeaderLogo: View {
     var body: some View {
-        VStack(spacing: 2) {
-            Text("Cooko")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.olive)
-            Text("可可廚師")
-                .font(.footnote)
-                .foregroundStyle(Color.warmGray)
-        }
-        .padding(.top, 4)
-        .accessibilityAddTraits(.isHeader)
+        Text("Cooko")
+            .font(.system(size: 32, weight: .bold, design: .rounded))
+            .foregroundStyle(Color.olive)
+            .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 1)
+            .padding(.top, 8)
+            .accessibilityAddTraits(.isHeader)
     }
 }
