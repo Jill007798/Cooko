@@ -29,24 +29,28 @@ struct FridgeView: View {
                 .ignoresSafeArea()
                 .opacity(0.3)
 
-            ScrollView {
-                VStack(spacing: 20) {
-                    HeaderLogo()
+            VStack(spacing: 0) {
+                // 固定標題
+                HeaderLogo()
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 今日靈感（小卡）
+                        inspirationCard
 
-                    // 今日靈感（小卡）
-                    inspirationCard
-
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(vm.items) { item in
-                            FoodCard(item: item) {
-                                vm.markUsed(item)
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(vm.items) { item in
+                                FoodCard(item: item) {
+                                    vm.markUsed(item)
+                                }
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 120)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 120)
                 }
-                .padding(.top, 12)
             }
 
             // 浮動新增按鈕 - iOS 16 玻璃質感
