@@ -4,7 +4,6 @@ struct RecipeService {
 
     // TODO: 之後把這個替換成 OpenAI API 呼叫
     func mockRecipes(from foods: [FoodItem]) async throws -> [Recipe] {
-        let names = foods.map { $0.name }
         let tip = "可以試試香蕉奶昔，5 分鐘完成！"
         return [
             Recipe(title: "豆腐炒蛋",
