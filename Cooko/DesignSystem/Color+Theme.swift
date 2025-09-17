@@ -7,6 +7,12 @@ extension Color {
     static let warmGray   = Color(hex: "#B0A99F")
     static let charcoal   = Color(hex: "#424242")
     static let warnOrange = Color(hex: "#E69A63")
+    
+    // iOS 16 玻璃質感色系
+    static let glassWhite = Color.white.opacity(0.25)
+    static let glassOlive  = Color(hex: "#8A9A5B").opacity(0.3)
+    static let glassCream  = Color(hex: "#FDF8F4").opacity(0.8)
+    static let glassShadow = Color.black.opacity(0.1)
 }
 
 extension Color {
@@ -26,4 +32,15 @@ extension Color {
         }
         self = Color(red: r, green: g, blue: b)
     }
+}
+
+// iOS 16 玻璃質感效果
+struct GlassEffect {
+    static let cardMaterial = Material.ultraThinMaterial
+    static let backgroundMaterial = Material.thinMaterial
+    static let overlayMaterial = Material.thickMaterial
+    
+    static let cardBlur: CGFloat = 20
+    static let backgroundBlur: CGFloat = 30
+    static let overlayBlur: CGFloat = 50
 }

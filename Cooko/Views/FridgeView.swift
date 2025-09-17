@@ -10,47 +10,72 @@ struct FridgeView: View {
 
     var body: some View {
         ZStack {
-            // 極淺木紋感（先用純色模擬，之後可換圖）
-            Color.cream.ignoresSafeArea()
+            // iOS 16 玻璃質感背景
+            LinearGradient(
+                colors: [
+                    Color.cream,
+                    Color.cream.opacity(0.8),
+                    Color.glassCream
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            // 背景模糊效果
+            Rectangle()
+                .fill(GlassEffect.backgroundMaterial)
+                .ignoresSafeArea()
+                .opacity(0.3)
 
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
                     HeaderLogo()
 
                     // 今日靈感（小卡）
                     inspirationCard
 
-                    LazyVGrid(columns: columns, spacing: 12) {
+                    LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(vm.items) { item in
                             FoodCard(item: item) {
                                 vm.markUsed(item)
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 100)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 120)
                 }
-                .padding(.top, 8)
+                .padding(.top, 12)
             }
 
-            // 浮動新增按鈕
+            // 浮動新增按鈕 - iOS 16 玻璃質感
             VStack {
                 Spacer()
                 Button {
                     showAdd = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
+                            .font(.title3)
                         Text("新增食材")
                             .fontWeight(.bold)
+                            .font(.subheadline)
                     }
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
-                    .background(Capsule().fill(Color.olive))
-                    .shadow(radius: 6, y: 3)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(
+                        Capsule()
+                            .fill(Color.olive)
+                            .overlay(
+                                Capsule()
+                                    .stroke(.white.opacity(0.3), lineWidth: 1)
+                            )
+                            .shadow(color: .olive.opacity(0.4), radius: 12, x: 0, y: 6)
+                            .shadow(color: .glassShadow, radius: 20, x: 0, y: 10)
+                    )
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 32)
             }
         }
         .sheet(isPresented: $showAdd) {
@@ -68,34 +93,69 @@ struct FridgeView: View {
         Group {
             if let r = recipeVM.recipes.first {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.4)))
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 6) {
+                    // iOS 16 強烈玻璃質感
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(GlassEffect.cardMaterial)
+                        .background(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(.white.opacity(0.15))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.7), .white.opacity(0.3)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 2
+                                )
+                        )
+                        .shadow(color: .glassShadow, radius: 12, x: 0, y: 6)
+                        .shadow(color: .glassShadow.opacity(0.4), radius: 24, x: 0, y: 12)
+                    
+                    HStack(alignment: .top, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("今日靈感")
-                                .font(.subheadline).foregroundStyle(Color.warmGray)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(Color.warmGray)
+                                .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
+                            
                             Text(r.title)
-                                .font(.title3).bold().foregroundStyle(Color.charcoal)
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundStyle(Color.charcoal)
+                                .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
+                            
                             Text(r.tip)
-                                .font(.footnote).foregroundStyle(Color.charcoal.opacity(0.8))
+                                .font(.footnote)
+                                .foregroundStyle(Color.charcoal.opacity(0.8))
+                                .lineLimit(2)
                         }
+                        
                         Spacer()
+                        
                         Button {
                             // 之後：跳到食譜詳頁
                         } label: {
                             Text("更多")
-                                .font(.caption).bold()
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Capsule().fill(Color.olive))
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.olive)
+                                        .shadow(color: .olive.opacity(0.4), radius: 6, x: 0, y: 3)
+                                )
                                 .foregroundStyle(.white)
                         }
                     }
-                    .padding(16)
+                    .padding(20)
                 }
-                .frame(height: 110)
-                .padding(.horizontal, 16)
+                .frame(height: 120)
+                .padding(.horizontal, 20)
             }
         }
     }
