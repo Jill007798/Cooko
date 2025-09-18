@@ -4,19 +4,101 @@ struct RecipeService {
 
     // TODO: 之後把這個替換成 OpenAI API 呼叫
     func mockRecipes(from foods: [FoodItem]) async throws -> [Recipe] {
-        let tip = "可以試試香蕉奶昔，5 分鐘完成！"
-        return [
-            Recipe(title: "豆腐炒蛋",
-                   ingredients: ["雞蛋", "豆腐", "蔥", "醬油"],
-                   steps: ["打蛋拌勻", "豆腐切塊", "蔥爆香下蛋、豆腐", "調味盛盤"],
-                   tags: ["快過期優先", "家常料理"],
-                   tip: tip),
-            Recipe(title: "葡萄優格碗",
-                   ingredients: ["葡萄", "優格", "燕麥"],
-                   steps: ["葡萄洗淨切半", "優格入碗", "撒上燕麥與葡萄"],
-                   tags: ["健康飲食", "省時快速"],
-                   tip: "當早餐或宵夜都很清爽！")
+        let dailyTips = [
+            ("來點香蕉果昔", "5分鐘完成", "超簡單"),
+            ("來個蒸蛋", "超營養", "10分鐘"),
+            ("試試蛋炒飯", "經典美味", "15分鐘"),
+            ("做個清爽沙拉", "超健康", "5分鐘"),
+            ("來碗蔬菜湯", "暖胃又營養", "20分鐘"),
+            ("煎個荷包蛋", "完美早餐", "5分鐘"),
+            ("做個水果優格", "超清爽", "3分鐘"),
+            ("來點炒青菜", "簡單美味", "8分鐘"),
+            ("試試水煮蛋", "完美蛋白質", "12分鐘"),
+            ("做個簡單炒飯", "一鍋搞定", "15分鐘"),
+            ("來碗蛋花湯", "暖身又營養", "10分鐘"),
+            ("試試涼拌菜", "清爽開胃", "5分鐘"),
+            ("做個煎蛋餅", "香嫩可口", "8分鐘"),
+            ("來點水果拼盤", "超新鮮", "3分鐘"),
+            ("試試蒸蛋羹", "滑嫩美味", "15分鐘"),
+            ("做個簡單湯麵", "暖胃飽足", "12分鐘")
         ]
+        
+        let randomTip = dailyTips.randomElement() ?? ("來點香蕉果昔", "5分鐘完成", "超簡單")
+        
+        // 生成小靈感
+        let inspiration = Recipe(title: randomTip.0,
+                                ingredients: [],
+                                steps: [],
+                                tags: [randomTip.1, randomTip.2],
+                                tip: "點擊查看完整食譜")
+        
+        // 根據食材生成具體食譜
+        let recipes = generateRecipesFromFoods(foods)
+        
+        return [inspiration] + recipes
+    }
+    
+    private func generateRecipesFromFoods(_ foods: [FoodItem]) -> [Recipe] {
+        // 根據食材組合生成食譜
+        let recipes = [
+            Recipe(
+                title: "蛋炒飯",
+                ingredients: ["雞蛋", "白米", "洋蔥", "橄欖油", "鹽"],
+                steps: [
+                    "1. 熱鍋下油，炒散雞蛋",
+                    "2. 加入洋蔥炒香",
+                    "3. 倒入白飯炒勻",
+                    "4. 調味即可"
+                ],
+                tags: ["經典美味", "15分鐘"],
+                tip: "用隔夜飯炒更香！"
+            ),
+            Recipe(
+                title: "蔬菜沙拉",
+                ingredients: ["生菜", "番茄", "胡蘿蔔", "橄欖油", "檸檬"],
+                steps: [
+                    "1. 所有蔬菜洗淨切絲",
+                    "2. 調製油醋醬",
+                    "3. 拌勻即可享用"
+                ],
+                tags: ["超健康", "5分鐘"],
+                tip: "新鮮蔬菜最美味！"
+            ),
+            Recipe(
+                title: "蒸蛋羹",
+                ingredients: ["雞蛋", "牛奶", "鹽"],
+                steps: [
+                    "1. 雞蛋打散加牛奶",
+                    "2. 過篩去氣泡",
+                    "3. 蒸15分鐘即可"
+                ],
+                tags: ["超營養", "15分鐘"],
+                tip: "蒸蛋要小火慢蒸！"
+            ),
+            Recipe(
+                title: "水果優格",
+                ingredients: ["優格", "香蕉", "葡萄"],
+                steps: [
+                    "1. 水果切塊",
+                    "2. 加入優格拌勻",
+                    "3. 冷藏後享用"
+                ],
+                tags: ["超清爽", "3分鐘"],
+                tip: "冰涼的優格最解膩！"
+            )
+        ]
+        
+        // 根據現有食材選擇適合的食譜（最多2道）
+        let availableFoods = foods.map { $0.name }
+        let suitableRecipes = recipes.filter { recipe in
+            recipe.ingredients.contains { ingredient in
+                availableFoods.contains { food in
+                    food.contains(ingredient) || ingredient.contains(food)
+                }
+            }
+        }
+        
+        return Array(suitableRecipes.prefix(2))
     }
 
     // MARK: - 真的要接 API 時，可改用這個雛形

@@ -27,7 +27,7 @@ struct FoodCard: View {
                 .shadow(color: .glassShadow, radius: 8, x: 0, y: 4)
                 .shadow(color: .glassShadow.opacity(0.3), radius: 20, x: 0, y: 8)
             
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     // 優先顯示 emoji，沒有則顯示圖片
                     if let emoji = item.emoji {
@@ -43,9 +43,15 @@ struct FoodCard: View {
                     
                     Spacer()
                     if item.isExpiringSoon {
-                        TagChip(text: "快過期", color: .warnOrange)
-                    } else {
-                        TagChip(text: "新鮮", color: .olive)
+                        Image(systemName: "clock.fill")
+                            .font(.caption)
+                            .foregroundColor(.warnOrange)
+                            .padding(6)
+                            .background(
+                                Circle()
+                                    .fill(.white.opacity(0.8))
+                                    .shadow(color: .warnOrange.opacity(0.3), radius: 4, x: 0, y: 2)
+                            )
                     }
                 }
                 
@@ -58,23 +64,21 @@ struct FoodCard: View {
                 Text("\(item.quantity) \(item.unit)")
                     .font(.subheadline)
                     .foregroundStyle(Color.charcoal.opacity(0.8))
-                
-                Spacer(minLength: 0)
-                
-                Button {
-                    onUse?()
-                } label: {
-                    Label("煮掉了", systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.olive)
-                .controlSize(.small)
-                .shadow(color: .olive.opacity(0.3), radius: 4, x: 0, y: 2)
             }
-            .padding(16)
+            .padding(12)
         }
-        .frame(height: 140)
+        .frame(height: 110)
     }
+}
+
+#Preview {
+    FoodCard(item: FoodItem(
+        name: "雞蛋",
+        emoji: "🥚",
+        quantity: 8,
+        unit: "顆",
+        location: .fridge,
+        expiry: Date().addingTimeInterval(60*60*24*2)
+    ))
+    .padding()
 }
