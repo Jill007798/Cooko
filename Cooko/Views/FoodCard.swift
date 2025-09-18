@@ -29,9 +29,18 @@ struct FoodCard: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(item.emoji ?? "🍽️")
-                        .font(.title2)
-                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    // 優先顯示 emoji，沒有則顯示圖片
+                    if let emoji = item.emoji {
+                        Text(emoji)
+                            .font(.title2)
+                            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    } else {
+                        // TODO: 之後補進專案圖片
+                        Image(systemName: "photo")
+                            .font(.title2)
+                            .foregroundColor(.warmGray.opacity(0.6))
+                    }
+                    
                     Spacer()
                     if item.isExpiringSoon {
                         TagChip(text: "快過期", color: .warnOrange)
