@@ -5,16 +5,36 @@ struct FridgeView: View {
     @StateObject var recipeVM = RecipeViewModel()
     @State private var showAdd = false
     @State private var showAllItems = false
+    @State private var isEditing = false
 
     let columns = [GridItem(.flexible(), spacing: 12),
-                   GridItem(.flexible(), spacing: 12),
                    GridItem(.flexible(), spacing: 12)]
     
     var displayedItems: [FoodItem] {
+        let sortedItems = vm.items.sorted { item1, item2 in
+            // 1. 即將過期的優先
+            if item1.isExpiringSoon != item2.isExpiringSoon {
+                return item1.isExpiringSoon
+            }
+            
+            // 2. 有emoji的優先
+            if (item1.emoji != nil) != (item2.emoji != nil) {
+                return item1.emoji != nil
+            }
+            
+            // 3. 短名稱優先（3字以下）
+            if (item1.name.count <= 3) != (item2.name.count <= 3) {
+                return item1.name.count <= 3
+            }
+            
+            // 4. 按名稱字母順序
+            return item1.name < item2.name
+        }
+        
         if showAllItems {
-            return vm.items
+            return sortedItems
         } else {
-            return Array(vm.items.prefix(9)) // 只顯示前 9 個（3行 x 3列）
+            return Array(sortedItems.prefix(6)) // 只顯示前 6 個（3行 x 2列）
         }
     }
 
@@ -50,14 +70,15 @@ struct FridgeView: View {
                 .padding(.horizontal, 20)
                 
                 ScrollView {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 40) {
                             // 小靈感標題
-                            sectionHeader(title: "小靈感", subtitle: "Daily Inspiration")
+                            sectionHeader(title: "嘿！你可以試試...", subtitle: "Daily Inspiration")
                         
                         // 今日靈感內容
                         inspirationCard
+                            .padding(.top, -20)
                         
-                        // 食材分區標題與新增按鈕
+                        // 食材分區標題
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("冰箱有什麼")
@@ -72,44 +93,57 @@ struct FridgeView: View {
                             
                             Spacer()
                             
-                            // 新增食材按鈕
-                            Button {
-                                showAdd = true
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.title3)
-                                    Text("新增食材")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
+                            if isEditing {
+                                // 編輯模式按鈕
+                                HStack(spacing: 12) {
+                                    Button("全部刪除") {
+                                        vm.removeAll()
+                                        isEditing = false
+                                    }
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                                    
+                                    Button("完成編輯") {
+                                        isEditing = false
+                                    }
+                                    .font(.caption)
+                                    .foregroundStyle(Color.olive)
                                 }
-                                .foregroundStyle(Color.olive)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule()
-                                        .fill(.white.opacity(0.8))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.olive.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .shadow(color: .glassShadow, radius: 4, x: 0, y: 2)
-                                )
+                            } else {
+                                // 注意期限說明
+                                HStack(spacing: 4) {
+                                    Rectangle()
+                                        .fill(Color(hex: "#F9D080"))
+                                        .frame(width: 8, height: 8)
+                                        .cornerRadius(2)
+                                    
+                                    Text("注意期限")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.charcoal.opacity(0.7))
+                                }
                             }
                         }
                         .padding(.horizontal, 20)
 
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(displayedItems) { item in
-                                FoodCard(item: item) {
+                                FoodCard(
+                                    item: item,
+                                    isEditing: isEditing,
+                                    onIncrease: { vm.increaseQuantity(item) },
+                                    onDecrease: { vm.decreaseQuantity(item) },
+                                    onDelete: { vm.remove(item) },
+                                    onEnterEditMode: { isEditing = true }
+                                ) {
                                     vm.markUsed(item)
                                 }
                             }
                         }
                         .padding(.horizontal, 20)
+                        .padding(.top, -20)
                         
                             // 顯示更多/更少按鈕
-                            if vm.items.count > 9 {
+                            if vm.items.count > 6 {
                                 if showAllItems {
                                     showLessButton
                                 } else {
@@ -121,12 +155,13 @@ struct FridgeView: View {
                             if recipeVM.recipes.count > 1 {
                                 sectionHeader(title: "推薦食譜", subtitle: "Recommended Recipes")
                                 
-                                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                                    ForEach(Array(recipeVM.recipes.dropFirst())) { recipe in
+                                LazyVGrid(columns: [GridItem(.flexible(), spacing: 24)], spacing: 24) {
+                                    ForEach(Array(recipeVM.recipes.dropFirst().prefix(4))) { recipe in
                                         RecipeCard(recipe: recipe)
                                     }
                                 }
                                 .padding(.horizontal, 20)
+                                .padding(.top, -20)
                             }
                         
                         Spacer()
@@ -192,6 +227,16 @@ struct FridgeView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 10)
+                .background(
+                    // 底部白色漸層覆蓋層
+                    LinearGradient(
+                        colors: [Color.white.opacity(0), Color.white.opacity(1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(width: UIScreen.main.bounds.width, height: 240)
+                    .ignoresSafeArea(.container, edges: .bottom)
+                )
             }
         }
         .sheet(isPresented: $showAdd) {
@@ -233,36 +278,31 @@ struct FridgeView: View {
                             .shadow(color: .glassShadow, radius: 12, x: 0, y: 6)
                             .shadow(color: .glassShadow.opacity(0.4), radius: 24, x: 0, y: 12)
                         
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "lightbulb.fill")
-                                    .font(.title3)
-                                    .foregroundStyle(Color.warnOrange)
-                                    .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
-                                
-                                Text(r.title)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(Color.charcoal)
-                                    .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.warmGray)
+                        HStack(spacing: 12) {
+                            Image(systemName: "lightbulb.fill")
+                                .font(.title3)
+                                .foregroundStyle(Color.warnOrange)
+                                .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
+                            
+                            Text(r.title)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.charcoal)
+                                .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
+                            
+                            Spacer()
+                            
+                            ForEach(r.tags, id: \.self) { tag in
+                                TagChip(text: tag, color: Color.olive.opacity(0.8))
                             }
                             
-                            HStack(spacing: 8) {
-                                ForEach(r.tags, id: \.self) { tag in
-                                    TagChip(text: tag, color: Color.olive.opacity(0.8))
-                                }
-                                Spacer()
-                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(Color.warmGray)
                         }
                         .padding(16)
                     }
-                    .frame(height: 100)
+                    .frame(height: 60)
                     .padding(.horizontal, 20)
                 }
             }
@@ -281,7 +321,7 @@ struct FridgeView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
-                Text("(還有 \(vm.items.count - 9) 項)")
+                Text("(還有 \(vm.items.count - 6) 項)")
                     .font(.caption)
                     .foregroundStyle(Color.olive.opacity(0.7))
                 
@@ -315,7 +355,7 @@ struct FridgeView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
-                Text("(收起 \(vm.items.count - 9) 項)")
+                Text("(收起 \(vm.items.count - 6) 項)")
                     .font(.caption)
                     .foregroundStyle(Color.olive.opacity(0.7))
                 

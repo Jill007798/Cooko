@@ -85,6 +85,30 @@ struct RecipeService {
                 ],
                 tags: ["超清爽", "3分鐘"],
                 tip: "冰涼的優格最解膩！"
+            ),
+            Recipe(
+                title: "番茄蛋花湯",
+                ingredients: ["番茄", "雞蛋", "鹽", "蔥"],
+                steps: [
+                    "1. 番茄切塊炒出汁",
+                    "2. 加水煮開",
+                    "3. 倒入蛋液攪拌",
+                    "4. 調味即可"
+                ],
+                tags: ["暖胃湯品", "10分鐘"],
+                tip: "番茄要炒出香味！"
+            ),
+            Recipe(
+                title: "蒜炒菠菜",
+                ingredients: ["菠菜", "大蒜", "橄欖油", "鹽"],
+                steps: [
+                    "1. 菠菜洗淨切段",
+                    "2. 熱鍋爆香蒜末",
+                    "3. 下菠菜快炒",
+                    "4. 調味即可"
+                ],
+                tags: ["健康蔬菜", "5分鐘"],
+                tip: "大火快炒保持脆嫩！"
             )
         ]
         
@@ -98,7 +122,7 @@ struct RecipeService {
             }
         }
         
-        return Array(suitableRecipes.prefix(2))
+        return Array(suitableRecipes.prefix(4))
     }
 
     // MARK: - 真的要接 API 時，可改用這個雛形

@@ -34,6 +34,27 @@ final class FridgeViewModel: ObservableObject {
         items[idx] = copy
         save()
     }
+    
+    func increaseQuantity(_ item: FoodItem) {
+        guard let idx = items.firstIndex(of: item) else { return }
+        var copy = items[idx]
+        copy.quantity += 1
+        items[idx] = copy
+        save()
+    }
+    
+    func decreaseQuantity(_ item: FoodItem) {
+        guard let idx = items.firstIndex(of: item) else { return }
+        var copy = items[idx]
+        copy.quantity = max(0, copy.quantity - 1)
+        items[idx] = copy
+        save()
+    }
+    
+    func removeAll() {
+        items.removeAll()
+        save()
+    }
 
     // MARK: - Persist (UserDefaults → 之後可換 CoreData)
     private func save() {
@@ -76,7 +97,12 @@ final class FridgeViewModel: ObservableObject {
             .init(name: "洋蔥", emoji: "🧅", quantity: 3, unit: "顆", location: .pantry, expiry: Date().addingTimeInterval(60*60*24*14)),
             .init(name: "馬鈴薯", emoji: "🥔", quantity: 4, unit: "顆", location: .pantry, expiry: Date().addingTimeInterval(60*60*24*21)),
             .init(name: "大蒜", emoji: "🧄", quantity: 1, unit: "包", location: .pantry, expiry: Date().addingTimeInterval(60*60*24*30)),
-            .init(name: "檸檬", emoji: "🍋", quantity: 2, unit: "顆", location: .pantry, expiry: Date().addingTimeInterval(60*60*24*7))
+            .init(name: "檸檬", emoji: "🍋", quantity: 2, unit: "顆", location: .pantry, expiry: Date().addingTimeInterval(60*60*24*7)),
+            
+            // 沒有emoji的食材（會排在最後）
+            .init(name: "新鮮番茄", quantity: 3, unit: "顆", location: .fridge, expiry: Date().addingTimeInterval(60*60*24*2)),
+            .init(name: "有機胡蘿蔔", quantity: 2, unit: "根", location: .fridge, expiry: Date().addingTimeInterval(60*60*24*5)),
+            .init(name: "新鮮菠菜", quantity: 1, unit: "包", location: .fridge, expiry: Date().addingTimeInterval(60*60*24*1))
         ]
         save()
     }
