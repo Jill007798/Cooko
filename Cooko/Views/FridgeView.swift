@@ -3,15 +3,27 @@ import SwiftUI
 struct FridgeView: View {
     @StateObject var vm = FridgeViewModel()
     @StateObject var recipeVM = RecipeViewModel()
+    @StateObject var toolsVM = ToolsViewModel()
     @State private var showAdd = false
     @State private var showAllItems = false
     @State private var isEditing = false
+    @State private var scrollOffset: CGFloat = 0
 
     let columns = [GridItem(.flexible(), spacing: 12),
                    GridItem(.flexible(), spacing: 12)]
     
+    // 計算標題透明度
+    var headerOpacity: Double {
+        let maxOffset: CGFloat = 100 // 滾動100點後完全透明
+        let opacity = max(0, 1 - scrollOffset / maxOffset)
+        return min(1, opacity)
+    }
+    
     var displayedItems: [FoodItem] {
-        let sortedItems = vm.items.sorted { item1, item2 in
+        // 先過濾掉數量為0的食材
+        let filteredItems = vm.items.filter { $0.quantity > 0 }
+        
+        let sortedItems = filteredItems.sorted { item1, item2 in
             // 1. 即將過期的優先
             if item1.isExpiringSoon != item2.isExpiringSoon {
                 return item1.isExpiringSoon
@@ -43,33 +55,37 @@ struct FridgeView: View {
             // 垂直線性漸層背景
             LinearGradient(
                 colors: [
-                    Color(hex: "#FFEECB"),  // top: 0%
-                    Color(hex: "#FFFFFF"),  // 37%
-                    Color(hex: "#FFFFFF"),  // 63%
-                    Color(hex: "#CADABB")   // bottom: 100%
+                    Color(hex: "#FFEECB"),  // top: 淺米色
+                    Color(hex: "#F5F5F5"),  // 中間: 淺灰白
+                    Color(hex: "#E8F5E8"),  // 中下: 淺綠白
+                    Color(hex: "#CADABB")   // bottom: 淺綠色
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
+            .zIndex(-1)
             
-            // 背景模糊效果
-            Rectangle()
-                .fill(GlassEffect.backgroundMaterial)
-                .ignoresSafeArea()
-                .opacity(0.3)
 
             VStack(spacing: 0) {
                 // 固定標題 - 靠左對齊
                 HStack {
                     HeaderLogo()
+                        .opacity(headerOpacity)
                     Spacer()
                 }
                 .padding(.top, 12)
                 .padding(.bottom, 16)
                 .padding(.horizontal, 20)
                 
+                
                 ScrollView {
+                    GeometryReader { geometry in
+                        Color.clear
+                            .preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scroll")).minY)
+                    }
+                    .frame(height: 0)
+                    
                     VStack(spacing: 40) {
                             // 小靈感標題
                             sectionHeader(title: "嘿！你可以試試...", subtitle: "Daily Inspiration")
@@ -119,7 +135,21 @@ struct FridgeView: View {
                                     
                                     Text("注意期限")
                                         .font(.caption)
-                                        .foregroundStyle(Color.charcoal.opacity(0.7))
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color(hex: "#FF8C00").opacity(0.8),
+                                                    Color(hex: "#F9D080").opacity(0.8)
+                                                ],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .cornerRadius(8)
                                 }
                             }
                         }
@@ -151,6 +181,36 @@ struct FridgeView: View {
                                 }
                             }
                             
+                            // 工具區塊
+                            sectionHeader(title: "廚房工具", subtitle: "Kitchen Tools")
+                            
+                            ScrollViewReader { proxy in
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 12) {
+                                        ForEach(toolsVM.tools) { tool in
+                                            ToolCard(tool: tool) {
+                                                // 記錄點擊前的狀態
+                                                let wasNotAvailable = !tool.isAvailable
+                                                
+                                                toolsVM.toggleToolAvailability(tool)
+                                                
+                                                // 如果工具從未選中變為選中，滑動到最左邊
+                                                if wasNotAvailable {
+                                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                                        proxy.scrollTo(tool.id, anchor: .leading)
+                                                    }
+                                                }
+                                            }
+                                            .id(tool.id)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, -20)
+                            
                             // 推薦食譜區塊
                             if recipeVM.recipes.count > 1 {
                                 sectionHeader(title: "推薦食譜", subtitle: "Recommended Recipes")
@@ -168,7 +228,22 @@ struct FridgeView: View {
                             .frame(height: 180)
                     }
                 }
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    scrollOffset = value
+                }
             }
+
+            // 底部白色漸層覆蓋層
+            LinearGradient(
+                colors: [Color.white.opacity(0), Color.white.opacity(1)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(width: UIScreen.main.bounds.width, height: 200)
+            .position(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height - 160)
+            .ignoresSafeArea(.all, edges: .bottom)
+            .zIndex(0) // 降低zIndex，讓按鈕在上層
 
             // 底部功能區塊
             VStack {
@@ -201,6 +276,7 @@ struct FridgeView: View {
                                 .shadow(color: .glassShadow, radius: 20, x: 0, y: 10)
                         )
                     }
+                    .zIndex(2) // 新增食材按鈕在最上層
                     
                     // 最愛清單按鈕
                     Button {
@@ -224,20 +300,11 @@ struct FridgeView: View {
                                 .shadow(color: .olive.opacity(0.4), radius: 8, x: 0, y: 4)
                         )
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
-                .background(
-                    // 底部白色漸層覆蓋層
-                    LinearGradient(
-                        colors: [Color.white.opacity(0), Color.white.opacity(1)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(width: UIScreen.main.bounds.width, height: 240)
-                    .ignoresSafeArea(.container, edges: .bottom)
-                )
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+            .zIndex(3) // 整個底部功能區塊在最上層
+        }
         }
         .sheet(isPresented: $showAdd) {
             AddFoodSheet { vm.add($0) }
@@ -394,6 +461,15 @@ struct FridgeView: View {
             Spacer()
         }
         .padding(.horizontal, 20)
+    }
+}
+
+// 滾動位置追蹤的 PreferenceKey
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

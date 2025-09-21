@@ -34,8 +34,9 @@ struct FoodCard: View {
                                         startPoint: .topTrailing,
                                         endPoint: .bottomLeading
                                     )
-                                    .frame(width: UIScreen.main.bounds.width * 0.12, height: UIScreen.main.bounds.width * 0.12)
-                                    .cornerRadius(20)
+                                    .frame(width: 40, height: 40)
+                                    .cornerRadius(16)
+                                    .clipped()
                                 }
                                 Spacer()
                             }
