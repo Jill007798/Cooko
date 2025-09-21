@@ -64,6 +64,7 @@ struct FridgeView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
+            .allowsHitTesting(false) // 不攔截觸控事件
             .zIndex(-1)
             
 
@@ -126,31 +127,61 @@ struct FridgeView: View {
                                     .foregroundStyle(Color.olive)
                                 }
                             } else {
-                                // 注意期限說明
-                                HStack(spacing: 4) {
-                                    Rectangle()
-                                        .fill(Color(hex: "#F9D080"))
-                                        .frame(width: 8, height: 8)
-                                        .cornerRadius(2)
-                                    
-                                    Text("注意期限")
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                        .foregroundStyle(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
+                                // 注意期限說明 - 與食材卡片格式相同
+                                ZStack {
+                                    // 圓角背景塊
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .fill(GlassEffect.cardMaterial)
                                         .background(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color(hex: "#FF8C00").opacity(0.8),
-                                                    Color(hex: "#F9D080").opacity(0.8)
-                                                ],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                                    .fill(.white.opacity(0.1))
+                                                
+                                                // 右方橘色漸層
+                                                VStack {
+                                                    HStack {
+                                                        Spacer()
+                                                        LinearGradient(
+                                                            colors: [
+                                                                Color(hex: "#FF8C00").opacity(0.6),
+                                                                Color(hex: "#FF8C00").opacity(0.4),
+                                                                Color(hex: "#FF8C00").opacity(0.2),
+                                                                Color.clear
+                                                            ],
+                                                            startPoint: .topTrailing,
+                                                            endPoint: .bottomLeading
+                                                        )
+                                                        .frame(width: 30, height: 30)
+                                                        .cornerRadius(12)
+                                                        .clipped()
+                                                    }
+                                                    Spacer()
+                                                }
+                                            }
                                         )
-                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                                .stroke(
+                                                    LinearGradient(
+                                                        colors: [.white.opacity(0.6), .white.opacity(0.2)],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    ),
+                                                    lineWidth: 1.5
+                                                )
+                                        )
+                                        .shadow(color: .glassShadow, radius: 8, x: 0, y: 4)
+                                        .shadow(color: .glassShadow.opacity(0.3), radius: 20, x: 0, y: 8)
+                                    
+                                    // 文字內容
+                                    Text("注意期限")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(Color.charcoal)
+                                        .minimumScaleFactor(0.8)
+                                        .lineLimit(1)
                                 }
+                                .frame(width: UIScreen.main.bounds.width * 0.20, height: 45)
                             }
                         }
                         .padding(.horizontal, 20)
@@ -243,6 +274,7 @@ struct FridgeView: View {
             .frame(width: UIScreen.main.bounds.width, height: 200)
             .position(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height - 160)
             .ignoresSafeArea(.all, edges: .bottom)
+            .allowsHitTesting(false) // 不攔截觸控事件，讓按鈕可以正常點擊
             .zIndex(0) // 降低zIndex，讓按鈕在上層
 
             // 底部功能區塊
