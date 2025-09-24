@@ -29,6 +29,6 @@ extension CookingTool {
         CookingTool(emoji: "🔌", name: "電磁爐", englishName: "Induction Cooker / Portable Cooker"),
         CookingTool(emoji: "🍲", name: "慢燉鍋", englishName: "Slow Cooker"),
         CookingTool(emoji: "🍵", name: "快煮壺", englishName: "Electric Kettle"),
-        CookingTool(emoji: "🍡", name: "微波爐", englishName: "Microwave")
+        CookingTool(emoji: "🌀", name: "微波爐", englishName: "Microwave")
     ]
 }

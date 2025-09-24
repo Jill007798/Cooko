@@ -30,28 +30,29 @@ struct ToolCard: View {
                 
                 VStack(spacing: 4) {
                     Text(tool.emoji)
-                        .font(.title2)
+                        .font(.title)
                         .grayscale(tool.isAvailable ? 0 : 1) // 灰階效果
                         .opacity(tool.isAvailable ? 1 : 0.6)
                     
                     VStack(spacing: 1) {
                         Text(tool.name)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.headline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(tool.isAvailable ? Color.charcoal : Color.warmGray)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                         
                         Text(tool.englishName)
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(tool.isAvailable ? Color.warmGray : Color.warmGray.opacity(0.6))
-                            .lineLimit(1)
+                            .lineLimit(2)
                             .minimumScaleFactor(0.7)
+                            .multilineTextAlignment(.center)
                     }
                 }
                 .padding(8)
             }
-            .frame(width: 80, height: 60)
+            .frame(width: 60, height: 65)
         }
         .buttonStyle(.plain)
     }

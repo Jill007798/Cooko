@@ -80,14 +80,15 @@ struct FridgeView: View {
                 .padding(.horizontal, 20)
                 
                 
-                ScrollView {
-                    GeometryReader { geometry in
-                        Color.clear
-                            .preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scroll")).minY)
-                    }
-                    .frame(height: 0)
-                    
-                    VStack(spacing: 40) {
+                ScrollViewReader { mainProxy in
+                    ScrollView {
+                        GeometryReader { geometry in
+                            Color.clear
+                                .preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scroll")).minY)
+                        }
+                        .frame(height: 0)
+                        
+                        VStack(spacing: 40) {
                             // 小靈感標題
                             sectionHeader(title: "嘿！你可以試試...", subtitle: "Daily Inspiration")
                         
@@ -202,34 +203,29 @@ struct FridgeView: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, -20)
+                        .id("ingredients-section")
                         
                             // 顯示更多/更少按鈕
                             if vm.items.count > 6 {
                                 if showAllItems {
-                                    showLessButton
+                                    showLessButton(scrollProxy: mainProxy)
+                                        .padding(.top, -30)
                                 } else {
                                     showMoreButton
+                                        .padding(.top, -30)
                                 }
                             }
                             
                             // 工具區塊
-                            sectionHeader(title: "廚房工具", subtitle: "Kitchen Tools")
+                            sectionHeader(title: "可用廚房工具", subtitle: "Available Kitchen Tools")
                             
                             ScrollViewReader { proxy in
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 12) {
                                         ForEach(toolsVM.tools) { tool in
                                             ToolCard(tool: tool) {
-                                                // 記錄點擊前的狀態
-                                                let wasNotAvailable = !tool.isAvailable
-                                                
-                                                toolsVM.toggleToolAvailability(tool)
-                                                
-                                                // 如果工具從未選中變為選中，滑動到最左邊
-                                                if wasNotAvailable {
-                                                    withAnimation(.easeInOut(duration: 0.5)) {
-                                                        proxy.scrollTo(tool.id, anchor: .leading)
-                                                    }
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    toolsVM.toggleToolAvailability(tool)
                                                 }
                                             }
                                             .id(tool.id)
@@ -237,6 +233,14 @@ struct FridgeView: View {
                                     }
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 16)
+                                }
+                                .onAppear {
+                                    // 應用載入時自動滾動到最左邊
+                                    if let firstTool = toolsVM.tools.first {
+                                        withAnimation(.easeInOut(duration: 0.5)) {
+                                            proxy.scrollTo(firstTool.id, anchor: .leading)
+                                        }
+                                    }
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -262,6 +266,7 @@ struct FridgeView: View {
                 .coordinateSpace(name: "scroll")
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                     scrollOffset = value
+                }
                 }
             }
 
@@ -443,10 +448,16 @@ struct FridgeView: View {
         .padding(.top, 16)
     }
     
-    private var showLessButton: some View {
+    private func showLessButton(scrollProxy: ScrollViewProxy) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.3)) {
                 showAllItems = false
+            }
+            // 延遲一點時間讓動畫完成後再滾動
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    scrollProxy.scrollTo("ingredients-section", anchor: .top)
+                }
             }
         } label: {
             HStack(spacing: 8) {
