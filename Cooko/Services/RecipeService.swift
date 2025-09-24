@@ -1,8 +1,47 @@
 import Foundation
 
 struct RecipeService {
+    private let chatGPTService = ChatGPTService()
 
-    // TODO: 之後把這個替換成 OpenAI API 呼叫
+    // 使用 ChatGPT 生成食譜建議
+    func generateRecipes(from foods: [FoodItem]) async throws -> [Recipe] {
+        // 如果 ChatGPT 已配置，使用 AI 生成
+        if chatGPTService.isConfigured {
+            return try await generateWithChatGPT(from: foods)
+        } else {
+            // 否則使用模擬數據
+            return try await mockRecipes(from: foods)
+        }
+    }
+    
+    // ChatGPT 生成食譜
+    private func generateWithChatGPT(from foods: [FoodItem]) async throws -> [Recipe] {
+        // 生成靈感卡片
+        let inspirationContent = await chatGPTService.generateCookingTip() ?? "今天來點創意料理吧！"
+        let inspiration = Recipe(
+            title: inspirationContent,
+            ingredients: [],
+            steps: [],
+            tags: ["AI推薦", "創意"],
+            tip: "點擊查看完整食譜"
+        )
+        
+        // 生成具體食譜
+        let recipeContent = await chatGPTService.generateRecipeSuggestion(from: foods) ?? "根據您的食材，建議製作簡單的家常菜。"
+        
+        // 解析 AI 回應並創建食譜
+        let aiRecipe = Recipe(
+            title: "AI推薦料理",
+            ingredients: foods.map { $0.name },
+            steps: recipeContent.components(separatedBy: "\n").filter { !$0.isEmpty },
+            tags: ["AI生成", "個性化"],
+            tip: recipeContent
+        )
+        
+        return [inspiration, aiRecipe]
+    }
+
+    // 模擬食譜（備用）
     func mockRecipes(from foods: [FoodItem]) async throws -> [Recipe] {
         let dailyTips = [
             ("來點香蕉果昔", "5分鐘完成", "超簡單"),
