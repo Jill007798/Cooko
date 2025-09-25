@@ -100,7 +100,6 @@ final class FridgeViewModel: ObservableObject {
             .init(name: "檸檬", emoji: "🍋", quantity: 2, unit: "顆", location: .pantry, expiry: Date().addingTimeInterval(60*60*24*7)),
             
             // 沒有emoji的食材（會排在最後）
-            .init(name: "新鮮番茄", quantity: 3, unit: "顆", location: .fridge, expiry: Date().addingTimeInterval(60*60*24*2)),
             .init(name: "有機胡蘿蔔", quantity: 2, unit: "根", location: .fridge, expiry: Date().addingTimeInterval(60*60*24*5)),
             .init(name: "新鮮菠菜", quantity: 1, unit: "包", location: .fridge, expiry: Date().addingTimeInterval(60*60*24*1))
         ]

@@ -5,9 +5,11 @@ struct FridgeView: View {
     @StateObject var recipeVM = RecipeViewModel()
     @StateObject var toolsVM = ToolsViewModel()
     @State private var showAdd = false
-    @State private var showAllItems = false
     @State private var isEditing = false
     @State private var scrollOffset: CGFloat = 0
+    @State private var showRecipeGeneration = false
+    @State private var showRecipesPage = false
+    @State private var isExpanded = false  // 縮合/展開狀態
 
     let columns = [GridItem(.flexible(), spacing: 12),
                    GridItem(.flexible(), spacing: 12)]
@@ -43,7 +45,7 @@ struct FridgeView: View {
             return item1.name < item2.name
         }
         
-        if showAllItems {
+        if isExpanded {
             return sortedItems
         } else {
             return Array(sortedItems.prefix(6)) // 只顯示前 6 個（3行 x 2列）
@@ -131,11 +133,11 @@ struct FridgeView: View {
                                 // 注意期限說明 - 與食材卡片格式相同
                                 ZStack {
                                     // 圓角背景塊
-                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(GlassEffect.cardMaterial)
                                         .background(
                                             ZStack {
-                                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
                                                     .fill(.white.opacity(0.1))
                                                 
                                                 // 右方橘色漸層
@@ -161,7 +163,7 @@ struct FridgeView: View {
                                             }
                                         )
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                                                 .stroke(
                                                     LinearGradient(
                                                         colors: [.white.opacity(0.6), .white.opacity(0.2)],
@@ -182,39 +184,57 @@ struct FridgeView: View {
                                         .minimumScaleFactor(0.8)
                                         .lineLimit(1)
                                 }
-                                .frame(width: UIScreen.main.bounds.width * 0.20, height: 45)
+                                .frame(width: UIScreen.main.bounds.width * 0.20, height: 35)
                             }
                         }
                         .padding(.horizontal, 20)
 
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(displayedItems) { item in
-                                FoodCard(
-                                    item: item,
-                                    isEditing: isEditing,
-                                    onIncrease: { vm.increaseQuantity(item) },
-                                    onDecrease: { vm.decreaseQuantity(item) },
-                                    onDelete: { vm.remove(item) },
-                                    onEnterEditMode: { isEditing = true }
-                                ) {
-                                    vm.markUsed(item)
+                        VStack(spacing: 12) {
+                            // 縮合模式：AddFoodCard 在最前面，自己占一行
+                            if !isExpanded {
+                                AddFoodCard {
+                                    showAdd = true
+                                }
+                            }
+                            
+                            // 食材卡片網格
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(displayedItems) { item in
+                                    FoodCard(
+                                        item: item,
+                                        isEditing: isEditing,
+                                        onIncrease: { vm.increaseQuantity(item) },
+                                        onDecrease: { vm.decreaseQuantity(item) },
+                                        onDelete: { vm.remove(item) },
+                                        onEnterEditMode: { isEditing = true }
+                                    ) {
+                                        vm.markUsed(item)
+                                    }
+                                }
+                            }
+                            
+                            // 展開模式：AddFoodCard 在最後面，自己占一行
+                            if isExpanded {
+                                AddFoodCard {
+                                    showAdd = true
                                 }
                             }
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, -20)
                         .id("ingredients-section")
+                        .animation(.easeInOut(duration: 0.3), value: isExpanded)
                         
-                            // 顯示更多/更少按鈕
-                            if vm.items.count > 6 {
-                                if showAllItems {
-                                    showLessButton(scrollProxy: mainProxy)
-                                        .padding(.top, -30)
-                                } else {
-                                    showMoreButton
-                                        .padding(.top, -30)
-                                }
+                        // 顯示更多/更少按鈕
+                        if vm.items.count > 6 {
+                            if isExpanded {
+                                showLessButton(scrollProxy: mainProxy)
+                                    .padding(.top, -30)
+                            } else {
+                                showMoreButton
+                                    .padding(.top, -30)
                             }
+                        }
                             
                             // 工具區塊
                             sectionHeader(title: "可用廚房工具", subtitle: "Available Kitchen Tools")
@@ -246,18 +266,69 @@ struct FridgeView: View {
                             .padding(.horizontal, 20)
                             .padding(.top, -20)
                             
-                            // 推薦食譜區塊
-                            if recipeVM.recipes.count > 1 {
-                                sectionHeader(title: "推薦食譜", subtitle: "Recommended Recipes")
-                                
-                                LazyVGrid(columns: [GridItem(.flexible(), spacing: 24)], spacing: 24) {
-                                    ForEach(Array(recipeVM.recipes.dropFirst().prefix(4))) { recipe in
-                                        RecipeCard(recipe: recipe)
+                            // 精選食譜區塊
+                            VStack(spacing: 20) {
+                                // 精選食譜標題
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("精選食譜")
+                                            .font(.title2)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(Color.charcoal)
+                                        
+                                        Text("Featured Recipes")
+                                            .font(.caption)
+                                            .foregroundStyle(Color.warmGray)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Button {
+                                        showRecipesPage = true
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text("查看更多")
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption)
+                                        }
+                                        .foregroundStyle(Color.olive)
                                     }
                                 }
                                 .padding(.horizontal, 20)
-                                .padding(.top, -20)
+                                
+                                // 精選食譜卡片
+                                if recipeVM.recipes.count > 1 {
+                                    VStack(spacing: 12) {
+                                        ForEach(Array(recipeVM.recipes.dropFirst().prefix(3))) { recipe in
+                                            FeaturedRecipeCard(recipe: recipe) {
+                                                // TODO: 顯示食譜詳情
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                } else {
+                                    // 如果沒有食譜，顯示生成按鈕
+                                    VStack(spacing: 16) {
+                                        Image(systemName: "book.closed")
+                                            .font(.system(size: 40))
+                                            .foregroundStyle(Color.warmGray.opacity(0.6))
+                                        
+                                        Text("還沒有精選食譜")
+                                            .font(.headline)
+                                            .foregroundStyle(Color.charcoal)
+                                        
+                                        Text("點擊下方按鈕生成你的專屬食譜")
+                                            .font(.subheadline)
+                                            .foregroundStyle(Color.warmGray)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .padding(.vertical, 40)
+                                }
                             }
+                            .padding(.top, -20)
                         
                         Spacer()
                             .frame(height: 180)
@@ -287,57 +358,45 @@ struct FridgeView: View {
                 Spacer()
                 
                 // 功能按鈕區塊
-                HStack(spacing: 20) {
-                    // 相機新增食材按鈕
+                VStack(spacing: 16) {
+                    // 生成專屬食譜按鈕（主要 CTA）
                     Button {
-                        showAdd = true
+                        showRecipeGeneration = true
                     } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "camera.fill")
-                                .font(.title3)
-                            Text("新增食材")
+                        HStack(spacing: 12) {
+                            Image(systemName: "wand.and.rays")
+                                .font(.title2)
+                            
+                            Text("生成專屬食譜")
                                 .fontWeight(.bold)
-                                .font(.subheadline)
+                                .font(.headline)
+                            
+                            Text("🍳")
+                                .font(.title2)
                         }
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 18)
                         .background(
                             Capsule()
-                                .fill(Color.olive)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.olive, Color.olive.opacity(0.8)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
                                 .overlay(
                                     Capsule()
                                         .stroke(.white.opacity(0.3), lineWidth: 1)
                                 )
-                                .shadow(color: .olive.opacity(0.4), radius: 12, x: 0, y: 6)
-                                .shadow(color: .glassShadow, radius: 20, x: 0, y: 10)
+                                .shadow(color: .olive.opacity(0.5), radius: 16, x: 0, y: 8)
+                                .shadow(color: .glassShadow, radius: 24, x: 0, y: 12)
                         )
                     }
-                    .zIndex(2) // 新增食材按鈕在最上層
+                    .zIndex(3) // 生成按鈕在最上層
                     
-                    // 最愛清單按鈕
-                    Button {
-                        // TODO: 最愛清單功能
-                    } label: {
-                        VStack(spacing: 4) {
-                            Image(systemName: "heart.fill")
-                                .font(.title2)
-                            Text("最愛")
-                                .font(.caption)
-                        }
-                        .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
-                        .background(
-                            Circle()
-                                .fill(Color.olive.opacity(0.8))
-                                .overlay(
-                                    Circle()
-                                        .stroke(.white.opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: .olive.opacity(0.4), radius: 8, x: 0, y: 4)
-                        )
-                    }
-            }
+                }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
             .zIndex(3) // 整個底部功能區塊在最上層
@@ -346,10 +405,36 @@ struct FridgeView: View {
         .sheet(isPresented: $showAdd) {
             AddFoodSheet { vm.add($0) }
         }
+        .sheet(isPresented: $showRecipeGeneration) {
+            RecipeGenerationSheet(
+                isPresented: $showRecipeGeneration,
+                foods: vm.items.filter { $0.quantity > 0 }
+            ) { request in
+                // 生成食譜後跳轉到食譜頁面
+                showRecipesPage = true
+            }
+        }
+        .fullScreenCover(isPresented: $showRecipesPage) {
+            RecipesView(foods: vm.items.filter { $0.quantity > 0 }) {
+                showRecipesPage = false
+            }
+        }
         .task {
             // 開App打一次（之後可換成真正的靈感API）
             if recipeVM.recipes.isEmpty {
                 await recipeVM.generate(from: vm.items)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            // App 進入背景時自動縮回
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isExpanded = false
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // App 回到前景時確保是縮合狀態
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isExpanded = false
             }
         }
     }
@@ -413,11 +498,10 @@ struct FridgeView: View {
         }
     }
     
-    
     private var showMoreButton: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.3)) {
-                showAllItems = true
+                isExpanded = true
             }
         } label: {
             HStack(spacing: 8) {
@@ -451,7 +535,7 @@ struct FridgeView: View {
     private func showLessButton(scrollProxy: ScrollViewProxy) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.3)) {
-                showAllItems = false
+                isExpanded = false
             }
             // 延遲一點時間讓動畫完成後再滾動
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
