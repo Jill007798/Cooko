@@ -54,17 +54,55 @@ struct FridgeView: View {
 
     var body: some View {
         ZStack {
-            // 垂直線性漸層背景
-            LinearGradient(
-                colors: [
-                    Color(hex: "#FFEECB"),  // top: 淺米色
-                    Color(hex: "#F5F5F5"),  // 中間: 淺灰白
-                    Color(hex: "#E8F5E8"),  // 中下: 淺綠白
-                    Color(hex: "#CADABB")   // bottom: 淺綠色
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            // 四角不同顏色的背景漸層
+            ZStack {
+                // 左上角 - 溫暖米色
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#FFEECB").opacity(0.6),
+                        Color.clear
+                    ],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 250
+                )
+                
+                // 右上角 - 清新綠色
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#A8E6CF").opacity(0.8),
+                        Color.clear
+                    ],
+                    center: .topTrailing,
+                    startRadius: 0,
+                    endRadius: 220
+                )
+                
+                // 左下角 - 柔和藍色
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#87CEEB").opacity(0.7),
+                        Color.clear
+                    ],
+                    center: .bottomLeading,
+                    startRadius: 0,
+                    endRadius: 200
+                )
+                
+                // 右下角 - 溫馨粉色
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#FFB6C1").opacity(0.8),
+                        Color.clear
+                    ],
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: 230
+                )
+                
+                // 整體基礎色調
+                Color(hex: "#F8F9FA").opacity(0.2)
+            }
             .ignoresSafeArea()
             .allowsHitTesting(false) // 不攔截觸控事件
             .zIndex(-1)
