@@ -12,18 +12,35 @@ struct RecipesView: View {
     
     var body: some View {
         ZStack {
-            // 背景漸層
-            LinearGradient(
-                colors: [
-                    Color(hex: "#FFEECB"),
-                    Color(hex: "#F5F5F5"),
-                    Color(hex: "#E8F5E8"),
-                    Color(hex: "#CADABB")
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            // 簡化版背景漸層 - 類似首頁但更簡單
+            ZStack {
+                // 左上角 - 溫暖米色（簡化版）
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#FFEECB").opacity(0.3),
+                        Color.clear
+                    ],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 200
+                )
+                
+                // 右下角 - 清新綠色（簡化版）
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#A8E6CF").opacity(0.4),
+                        Color.clear
+                    ],
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: 180
+                )
+                
+                // 整體基礎色調
+                Color(hex: "#F8F9FA").opacity(0.3)
+            }
             .ignoresSafeArea()
+            .allowsHitTesting(false)
             
             VStack(spacing: 0) {
                 // 頂部標題區域

@@ -246,7 +246,8 @@ struct FridgeView: View {
                                         onDelete: { vm.remove(item) },
                                         onEnterEditMode: { isEditing = true }
                                     ) {
-                                        vm.markUsed(item)
+                                        // 點擊食材時不直接減少數量，而是顯示使用確認
+                                        // vm.markUsed(item)
                                     }
                                 }
                             }

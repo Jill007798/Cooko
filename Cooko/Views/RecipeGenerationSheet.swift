@@ -7,28 +7,55 @@ struct RecipeGenerationSheet: View {
         PreferenceOption(title: "健康飲食", emoji: "🥗"),
         PreferenceOption(title: "快速省時", emoji: "⚡"),
         PreferenceOption(title: "創意料理", emoji: "🎨"),
-        PreferenceOption(title: "家常風味", emoji: "🏠")
+        PreferenceOption(title: "今天想吃素", emoji: "🌱"),
+        PreferenceOption(title: "寶寶粥", emoji: "👶"),
+        PreferenceOption(title: "高蛋白", emoji: "💪")
     ]
+    @State private var selectedFoods: Set<UUID> = []
     @State private var isGenerating = false
     @State private var showRecipesPage = false
     
     let foods: [FoodItem]
     let onGenerate: (RecipeGenerationRequest) -> Void
     
+    init(isPresented: Binding<Bool>, foods: [FoodItem], onGenerate: @escaping (RecipeGenerationRequest) -> Void) {
+        self._isPresented = isPresented
+        self.foods = foods
+        self.onGenerate = onGenerate
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
-                // 背景漸層
-                LinearGradient(
-                    colors: [
-                        Color(hex: "#FFEECB"),
-                        Color(hex: "#F5F5F5"),
-                        Color(hex: "#E8F5E8")
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                // 簡化版背景漸層 - 類似首頁但更簡單
+                ZStack {
+                    // 左上角 - 溫暖米色（簡化版）
+                    RadialGradient(
+                        colors: [
+                            Color(hex: "#FFEECB").opacity(0.3),
+                            Color.clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 200
+                    )
+                    
+                    // 右下角 - 清新綠色（簡化版）
+                    RadialGradient(
+                        colors: [
+                            Color(hex: "#A8E6CF").opacity(0.4),
+                            Color.clear
+                        ],
+                        center: .bottomTrailing,
+                        startRadius: 0,
+                        endRadius: 180
+                    )
+                    
+                    // 整體基礎色調
+                    Color(hex: "#F8F9FA").opacity(0.3)
+                }
                 .ignoresSafeArea()
+                .allowsHitTesting(false)
                 
                 ScrollView {
                     VStack(spacing: 24) {
@@ -46,45 +73,50 @@ struct RecipeGenerationSheet: View {
                         }
                         .padding(.top, 20)
                         
-                        // 偏好選擇區塊
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("選擇偏好")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.charcoal)
-                            
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ], spacing: 12) {
-                                ForEach(preferences.indices, id: \.self) { index in
-                                    PreferenceChip(
-                                        preference: $preferences[index],
-                                        onTap: {
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                preferences[index].isSelected.toggle()
-                                            }
-                                        }
-                                    )
+            // 偏好選擇區塊
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("選擇偏好")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.charcoal)
+                    
+                    Text("Customize your meal preferences")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.warmGray)
+                }
+                
+                LazyVGrid(columns: [
+                    GridItem(.adaptive(minimum: 120), spacing: 12)
+                ], spacing: 12) {
+                    ForEach(preferences.indices, id: \.self) { index in
+                        PreferenceChip(
+                            preference: $preferences[index],
+                            onTap: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    preferences[index].isSelected.toggle()
                                 }
                             }
-                        }
-                        .padding(.horizontal, 20)
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
                         
-                        // 工具確認區塊
+                        // 工具選擇區塊
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("確認工具")
+                            Text("選擇工具")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(Color.charcoal)
                             
-                            Text("已選擇的廚房工具")
+                            Text("選擇你擁有的廚房工具")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.warmGray)
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(toolsVM.getAvailableTools()) { tool in
+                                    ForEach(toolsVM.tools) { tool in
                                         ToolConfirmationChip(tool: tool) {
                                             withAnimation(.easeInOut(duration: 0.3)) {
                                                 toolsVM.toggleToolAvailability(tool)
@@ -97,12 +129,16 @@ struct RecipeGenerationSheet: View {
                         }
                         .padding(.horizontal, 20)
                         
-                        // 食材預覽
+                        // 食材選擇
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("可用食材")
+                            Text("選擇食材")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(Color.charcoal)
+                            
+                            Text("選擇要使用的食材")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.warmGray)
                             
                             LazyVGrid(columns: [
                                 GridItem(.flexible()),
@@ -110,69 +146,90 @@ struct RecipeGenerationSheet: View {
                                 GridItem(.flexible())
                             ], spacing: 8) {
                                 ForEach(foods.filter { $0.quantity > 0 }) { food in
-                                    Text(food.name)
-                                        .font(.caption)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(
-                                            Capsule()
-                                                .fill(Color.olive.opacity(0.2))
-                                        )
-                                        .foregroundStyle(Color.olive)
+                                    FoodSelectionChip(
+                                        food: food,
+                                        isSelected: selectedFoods.contains(food.id),
+                                        onToggle: {
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                if selectedFoods.contains(food.id) {
+                                                    selectedFoods.remove(food.id)
+                                                } else {
+                                                    selectedFoods.insert(food.id)
+                                                }
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }
                         .padding(.horizontal, 20)
                         
-                        Spacer(minLength: 100)
-                    }
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
-                        isPresented = false
-                    }
-                    .foregroundStyle(Color.warmGray)
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        generateRecipes()
-                    } label: {
-                        if isGenerating {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        } else {
-                            Text("送出生成")
-                                .fontWeight(.semibold)
+                        Spacer(minLength: 20)
+                        
+                        // 送出生成按鈕 - 放在畫面最下方
+                        Button {
+                            generateRecipes()
+                        } label: {
+                            HStack(spacing: 8) {
+                                if isGenerating {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "wand.and.rays")
+                                        .font(.system(size: 16, weight: .medium))
+                                    
+                                    Text("送出生成")
+                                        .fontWeight(.bold)
+                                        .font(.headline)
+                                }
+                            }
                         }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 16)
+                        .background(
+                            Capsule()
+                                .fill(Color.olive)
+                                .shadow(color: .olive.opacity(0.3), radius: 8, x: 0, y: 4)
+                        )
+                        .disabled(isGenerating)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(Color.olive)
-                            .shadow(color: .olive.opacity(0.3), radius: 4, x: 0, y: 2)
-                    )
-                    .disabled(isGenerating)
                 }
             }
         }
         .onAppear {
+            // 預設全選所有食材
+            selectedFoods = Set(foods.filter { $0.quantity > 0 }.map { $0.id })
             toolsVM.loadTools()
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    isPresented = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color.warmGray)
+                }
+            }
         }
     }
     
     private func generateRecipes() {
         isGenerating = true
         
+        let selectedIngredients = foods.filter { $0.quantity > 0 && selectedFoods.contains($0.id) }
+        let selectedTools = toolsVM.getAvailableTools()
+        let selectedPreferences = preferences.filter { $0.isSelected }
+        
         let request = RecipeGenerationRequest(
-            foods: foods,
-            selectedTools: toolsVM.getAvailableTools(),
-            preferences: preferences.filter { $0.isSelected }
+            foods: selectedIngredients,
+            selectedTools: selectedTools,
+            preferences: selectedPreferences
         )
         
         // 模擬生成延遲
@@ -193,25 +250,104 @@ struct PreferenceChip: View {
         Button(action: onTap) {
             HStack(spacing: 8) {
                 Text(preference.emoji)
-                    .font(.title2)
+                    .font(.title3)
                 
                 Text(preference.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
-            .foregroundStyle(preference.isSelected ? .white : Color.olive)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .foregroundStyle(preference.isSelected ? .white : Color.warmGray.opacity(0.7))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(preference.isSelected ? Color.olive : Color.olive.opacity(0.1))
+                Capsule()
+                    .fill(preference.isSelected ? 
+                          AnyShapeStyle(LinearGradient(
+                              colors: [Color.olive, Color.olive.opacity(0.8)],
+                              startPoint: .topLeading,
+                              endPoint: .bottomTrailing
+                          )) : 
+                          AnyShapeStyle(Color.warmGray.opacity(0.15))
+                    )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.olive.opacity(0.3), lineWidth: 1)
+                        Capsule()
+                            .stroke(
+                                preference.isSelected ? 
+                                Color.olive.opacity(0.8) : 
+                                Color.warmGray.opacity(0.3), 
+                                lineWidth: preference.isSelected ? 2 : 1
+                            )
+                    )
+                    .shadow(
+                        color: preference.isSelected ? 
+                        Color.olive.opacity(0.3) : 
+                        Color.clear, 
+                        radius: preference.isSelected ? 4 : 0, 
+                        x: 0, 
+                        y: preference.isSelected ? 2 : 0
                     )
             )
+            .scaleEffect(preference.isSelected ? 1.0 : 0.95)
         }
         .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.2), value: preference.isSelected)
+    }
+}
+
+// 食材選擇芯片
+struct FoodSelectionChip: View {
+    let food: FoodItem
+    let isSelected: Bool
+    let onToggle: () -> Void
+    
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 6) {
+                if let emoji = food.emoji {
+                    Text(emoji)
+                        .font(.caption)
+                        .opacity(isSelected ? 1.0 : 0.6)
+                }
+                
+                Text(food.name)
+                    .font(.caption)
+                    .fontWeight(isSelected ? .semibold : .medium)
+            }
+            .foregroundStyle(isSelected ? .white : Color.warmGray.opacity(0.7))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(isSelected ? 
+                          AnyShapeStyle(LinearGradient(
+                              colors: [Color.olive, Color.olive.opacity(0.8)],
+                              startPoint: .topLeading,
+                              endPoint: .bottomTrailing
+                          )) : 
+                          AnyShapeStyle(Color.warmGray.opacity(0.15))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(
+                                isSelected ? 
+                                Color.olive.opacity(0.8) : 
+                                Color.warmGray.opacity(0.3), 
+                                lineWidth: isSelected ? 2 : 1
+                            )
+                    )
+                    .shadow(
+                        color: isSelected ? 
+                        Color.olive.opacity(0.3) : 
+                        Color.clear, 
+                        radius: isSelected ? 3 : 0, 
+                        x: 0, 
+                        y: isSelected ? 1 : 0
+                    )
+            )
+            .scaleEffect(isSelected ? 1.0 : 0.95)
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
 
@@ -225,21 +361,36 @@ struct ToolConfirmationChip: View {
             HStack(spacing: 6) {
                 Text(tool.emoji)
                     .font(.title3)
+                    .opacity(tool.isAvailable ? 1.0 : 0.6)
                 
                 Text(tool.name)
                     .font(.caption)
-                    .fontWeight(.medium)
+                    .fontWeight(tool.isAvailable ? .semibold : .medium)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(tool.isAvailable ? .white : Color.warmGray.opacity(0.7))
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 Capsule()
-                    .fill(Color.olive)
-                    .shadow(color: .olive.opacity(0.3), radius: 2, x: 0, y: 1)
+                    .fill(tool.isAvailable ? Color.olive : Color.warmGray.opacity(0.15))
+                    .overlay(
+                        Capsule()
+                            .stroke(
+                                tool.isAvailable ? Color.olive.opacity(0.8) : Color.warmGray.opacity(0.4), 
+                                lineWidth: tool.isAvailable ? 2 : 1
+                            )
+                    )
+                    .shadow(
+                        color: tool.isAvailable ? .olive.opacity(0.4) : .clear, 
+                        radius: tool.isAvailable ? 4 : 0, 
+                        x: 0, 
+                        y: tool.isAvailable ? 2 : 0
+                    )
             )
+            .scaleEffect(tool.isAvailable ? 1.0 : 0.95)
         }
         .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.2), value: tool.isAvailable)
     }
 }
 
