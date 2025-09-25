@@ -417,19 +417,7 @@ struct FridgeView: View {
                         .padding(.vertical, 18)
                         .background(
                             Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.olive, Color.olive.opacity(0.8)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .overlay(
-                                    Capsule()
-                                        .stroke(.white.opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: .olive.opacity(0.5), radius: 16, x: 0, y: 8)
-                                .shadow(color: .glassShadow, radius: 24, x: 0, y: 12)
+                                .fill(Color.olive)
                         )
                     }
                     .zIndex(3) // 生成按鈕在最上層

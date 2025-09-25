@@ -3,9 +3,9 @@ import SwiftUI
 struct HeaderLogo: View {
     var body: some View {
         Text("Cooko")
-            .font(.custom("Hind-Bold", size: 26))
-            .foregroundStyle(Color(hex: "#6B7A4B"))
-            .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 1)
+            .font(.system(size: 28, weight: .black, design: .rounded))
+            .foregroundStyle(Color(hex: "#4A5A2A"))
+            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
             .accessibilityAddTraits(.isHeader)
     }
 }
