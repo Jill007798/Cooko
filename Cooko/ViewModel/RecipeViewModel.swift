@@ -14,13 +14,15 @@ final class RecipeViewModel: ObservableObject {
         do {
             // 使用新的 generateRecipes 方法，會自動選擇 ChatGPT 或模擬數據
             let result = try await service.generateRecipes(from: foods)
-            self.recipes = result
+            // 過濾掉沒有步驟的食譜
+            self.recipes = result.filter { !$0.steps.isEmpty }
         } catch {
             self.errorMessage = error.localizedDescription
             // 如果 ChatGPT 失敗，回退到模擬數據
             do {
                 let fallbackResult = try await service.mockRecipes(from: foods)
-                self.recipes = fallbackResult
+                // 過濾掉沒有步驟的食譜
+                self.recipes = fallbackResult.filter { !$0.steps.isEmpty }
                 self.errorMessage = nil
             } catch {
                 self.errorMessage = "無法生成食譜建議"

@@ -10,6 +10,7 @@ struct FridgeView: View {
     @State private var showRecipeGeneration = false
     @State private var showRecipesPage = false
     @State private var isExpanded = false  // 縮合/展開狀態
+    @State private var showRecipeDetail: Recipe? = nil
 
     let columns = [GridItem(.flexible(), spacing: 12),
                    GridItem(.flexible(), spacing: 12)]
@@ -343,7 +344,7 @@ struct FridgeView: View {
                                     VStack(spacing: 12) {
                                         ForEach(Array(recipeVM.recipes.dropFirst().prefix(3))) { recipe in
                                             FeaturedRecipeCard(recipe: recipe) {
-                                                // TODO: 顯示食譜詳情
+                                                showRecipeDetail = recipe
                                             }
                                         }
                                     }
@@ -446,6 +447,11 @@ struct FridgeView: View {
                 showRecipesPage = false
             }
         }
+        .sheet(item: $showRecipeDetail) { recipe in
+            RecipeDetailView(recipe: recipe) {
+                showRecipeDetail = nil
+            }
+        }
         .task {
             // 開App打一次（之後可換成真正的靈感API）
             if recipeVM.recipes.isEmpty {
@@ -470,7 +476,7 @@ struct FridgeView: View {
         Group {
             if let r = recipeVM.recipes.first {
                 Button {
-                    // TODO: 顯示食譜詳情
+                    showRecipeDetail = r
                 } label: {
                     ZStack {
                         // iOS 16 強烈玻璃質感

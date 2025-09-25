@@ -165,39 +165,66 @@ struct RecipeDetailView: View {
                             }
                             
                             VStack(spacing: 16) {
-                                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
-                                    HStack(alignment: .top, spacing: 16) {
-                                        // 步驟編號
-                                        Text("\(index + 1)")
-                                            .font(.headline)
-                                            .fontWeight(.bold)
-                                            .foregroundStyle(.white)
-                                            .frame(width: 32, height: 32)
-                                            .background(
-                                                Circle()
-                                                    .fill(Color.olive)
-                                                    .shadow(color: .olive.opacity(0.3), radius: 4, x: 0, y: 2)
-                                            )
+                                if recipe.steps.isEmpty {
+                                    // 如果沒有步驟，顯示提示訊息
+                                    VStack(spacing: 12) {
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .font(.title2)
+                                            .foregroundStyle(Color.warnOrange)
                                         
-                                        // 步驟內容
-                                        Text(step)
+                                        Text("此食譜暫無詳細步驟")
                                             .font(.subheadline)
                                             .foregroundStyle(Color.charcoal)
-                                            .multilineTextAlignment(.leading)
                                         
-                                        Spacer()
+                                        Text("請稍後再試或選擇其他食譜")
+                                            .font(.caption)
+                                            .foregroundStyle(Color.warmGray)
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 20)
+                                    .frame(maxWidth: .infinity)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16)
                                             .fill(.white.opacity(0.6))
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 16)
-                                                    .stroke(Color.olive.opacity(0.2), lineWidth: 1)
+                                                    .stroke(Color.warnOrange.opacity(0.3), lineWidth: 1)
                                             )
-                                            .shadow(color: .glassShadow, radius: 2, x: 0, y: 1)
                                     )
+                                } else {
+                                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                                        HStack(alignment: .top, spacing: 16) {
+                                            // 步驟編號
+                                            Text("\(index + 1)")
+                                                .font(.headline)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(.white)
+                                                .frame(width: 32, height: 32)
+                                                .background(
+                                                    Circle()
+                                                        .fill(Color.olive)
+                                                        .shadow(color: .olive.opacity(0.3), radius: 4, x: 0, y: 2)
+                                                )
+                                            
+                                            // 步驟內容
+                                            Text(step)
+                                                .font(.subheadline)
+                                                .foregroundStyle(Color.charcoal)
+                                                .multilineTextAlignment(.leading)
+                                            
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(.white.opacity(0.6))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 16)
+                                                        .stroke(Color.olive.opacity(0.2), lineWidth: 1)
+                                                )
+                                                .shadow(color: .glassShadow, radius: 2, x: 0, y: 1)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -262,15 +289,6 @@ struct RecipeDetailView: View {
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        // TODO: 分享功能
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.title3)
-                            .foregroundStyle(Color.olive)
-                    }
-                }
             }
         }
     }

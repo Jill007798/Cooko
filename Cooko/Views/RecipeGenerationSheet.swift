@@ -18,6 +18,15 @@ struct RecipeGenerationSheet: View {
     let foods: [FoodItem]
     let onGenerate: (RecipeGenerationRequest) -> Void
     
+    // 計算選擇數量
+    private var selectedPreferences: [PreferenceOption] {
+        preferences.filter { $0.isSelected }
+    }
+    
+    private var selectedTools: [CookingTool] {
+        toolsVM.getAvailableTools()
+    }
+    
     init(isPresented: Binding<Bool>, foods: [FoodItem], onGenerate: @escaping (RecipeGenerationRequest) -> Void) {
         self._isPresented = isPresented
         self.foods = foods
@@ -25,178 +34,242 @@ struct RecipeGenerationSheet: View {
     }
     
     var body: some View {
-        NavigationView {
+        ZStack {
+            // 簡化版背景漸層 - 類似首頁但更簡單
             ZStack {
-                // 簡化版背景漸層 - 類似首頁但更簡單
-                ZStack {
-                    // 左上角 - 溫暖米色（簡化版）
-                    RadialGradient(
-                        colors: [
-                            Color(hex: "#FFEECB").opacity(0.3),
-                            Color.clear
-                        ],
-                        center: .topLeading,
-                        startRadius: 0,
-                        endRadius: 200
-                    )
-                    
-                    // 右下角 - 清新綠色（簡化版）
-                    RadialGradient(
-                        colors: [
-                            Color(hex: "#A8E6CF").opacity(0.4),
-                            Color.clear
-                        ],
-                        center: .bottomTrailing,
-                        startRadius: 0,
-                        endRadius: 180
-                    )
-                    
-                    // 整體基礎色調
-                    Color(hex: "#F8F9FA").opacity(0.3)
-                }
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+                // 左上角 - 溫暖米色（簡化版）
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#FFEECB").opacity(0.3),
+                        Color.clear
+                    ],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 200
+                )
                 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // 標題區域
-                        VStack(spacing: 8) {
+                // 右下角 - 清新綠色（簡化版）
+                RadialGradient(
+                    colors: [
+                        Color(hex: "#A8E6CF").opacity(0.4),
+                        Color.clear
+                    ],
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: 180
+                )
+                
+                // 整體基礎色調
+                Color(hex: "#F8F9FA").opacity(0.3)
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    // 標題區域
+                    VStack(spacing: 8) {
+                        // 標題和退出按鈕
+                        HStack {
+                            Button {
+                                isPresented = false
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(Color.warmGray.opacity(0.7))
+                            }
+                            
+                            Spacer()
+                            
                             Text("生成專屬食譜")
                                 .font(.largeTitle)
                                 .fontWeight(.bold)
                                 .foregroundStyle(Color.charcoal)
                             
-                            Text("告訴 Cooko 你的偏好，我們來為你量身打造美味食譜")
+                            Spacer()
+                            
+                            // 保持對稱的空白空間
+                            Color.clear
+                                .frame(width: 32, height: 32)
+                        }
+                        
+                        Text("告訴 Cooko 你的偏好，我們來為你量身打造美味食譜")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.warmGray)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    
+                    // 偏好選擇區塊
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("選擇偏好")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(Color.charcoal)
+                                
+                                Spacer()
+                                
+                                Text("已選 \(selectedPreferences.count) 項")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.olive)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.olive.opacity(0.1))
+                                    )
+                            }
+                            
+                            Text("Customize your meal preferences")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.warmGray)
-                                .multilineTextAlignment(.center)
                         }
-                        .padding(.top, 20)
                         
-            // 偏好選擇區塊
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("選擇偏好")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.charcoal)
-                    
-                    Text("Customize your meal preferences")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.warmGray)
-                }
-                
-                LazyVGrid(columns: [
-                    GridItem(.adaptive(minimum: 120), spacing: 12)
-                ], spacing: 12) {
-                    ForEach(preferences.indices, id: \.self) { index in
-                        PreferenceChip(
-                            preference: $preferences[index],
-                            onTap: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    preferences[index].isSelected.toggle()
-                                }
+                        LazyVGrid(columns: [
+                            GridItem(.adaptive(minimum: 120), spacing: 12)
+                        ], spacing: 12) {
+                            ForEach(preferences.indices, id: \.self) { index in
+                                PreferenceChip(
+                                    preference: $preferences[index],
+                                    onTap: {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            preferences[index].isSelected.toggle()
+                                        }
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
-                }
-            }
-            .padding(.horizontal, 20)
-                        
-                        // 工具選擇區塊
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("選擇工具")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.charcoal)
+                    .padding(.horizontal, 20)
+                    
+                    // 工具選擇區塊
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("選擇工具")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(Color.charcoal)
+                                
+                                Spacer()
+                                
+                                Text("已選 \(selectedTools.count) 項")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.olive)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.olive.opacity(0.1))
+                                    )
+                            }
                             
                             Text("選擇你擁有的廚房工具")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.warmGray)
-                            
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(toolsVM.tools) { tool in
-                                        ToolConfirmationChip(tool: tool) {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                toolsVM.toggleToolAvailability(tool)
-                                            }
+                        }
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(toolsVM.tools) { tool in
+                                    ToolConfirmationChip(tool: tool) {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            toolsVM.toggleToolAvailability(tool)
                                         }
                                     }
                                 }
-                                .padding(.horizontal, 20)
                             }
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
-                        
-                        // 食材選擇
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("選擇食材")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.charcoal)
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    // 食材選擇
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("選擇食材")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(Color.charcoal)
+                                
+                                Spacer()
+                                
+                                Text("已選 \(selectedFoods.count) 項")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.olive)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.olive.opacity(0.1))
+                                    )
+                            }
                             
                             Text("選擇要使用的食材")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.warmGray)
-                            
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ], spacing: 8) {
-                                ForEach(foods.filter { $0.quantity > 0 }) { food in
-                                    FoodSelectionChip(
-                                        food: food,
-                                        isSelected: selectedFoods.contains(food.id),
-                                        onToggle: {
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                if selectedFoods.contains(food.id) {
-                                                    selectedFoods.remove(food.id)
-                                                } else {
-                                                    selectedFoods.insert(food.id)
-                                                }
+                        }
+                        
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 8) {
+                            ForEach(foods.filter { $0.quantity > 0 }) { food in
+                                FoodSelectionChip(
+                                    food: food,
+                                    isSelected: selectedFoods.contains(food.id),
+                                    onToggle: {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            if selectedFoods.contains(food.id) {
+                                                selectedFoods.remove(food.id)
+                                            } else {
+                                                selectedFoods.insert(food.id)
                                             }
                                         }
-                                    )
-                                }
+                                    }
+                                )
                             }
                         }
-                        .padding(.horizontal, 20)
-                        
-                        Spacer(minLength: 20)
-                        
-                        // 送出生成按鈕 - 放在畫面最下方
-                        Button {
-                            generateRecipes()
-                        } label: {
-                            HStack(spacing: 8) {
-                                if isGenerating {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: "wand.and.rays")
-                                        .font(.system(size: 16, weight: .medium))
-                                    
-                                    Text("送出生成")
-                                        .fontWeight(.bold)
-                                        .font(.headline)
-                                }
-                            }
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 16)
-                        .background(
-                            Capsule()
-                                .fill(Color.olive)
-                                .shadow(color: .olive.opacity(0.3), radius: 8, x: 0, y: 4)
-                        )
-                        .disabled(isGenerating)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
                     }
+                    .padding(.horizontal, 20)
+                    
+                    Spacer(minLength: 20)
+                    
+                    // 送出生成按鈕 - 放在畫面最下方
+                    Button {
+                        generateRecipes()
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isGenerating {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "wand.and.rays")
+                                    .font(.system(size: 16, weight: .medium))
+                                
+                                Text("送出生成")
+                                    .fontWeight(.bold)
+                                    .font(.headline)
+                            }
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 16)
+                    .background(
+                        Capsule()
+                            .fill(Color.olive)
+                            .shadow(color: .olive.opacity(0.3), radius: 8, x: 0, y: 4)
+                    )
+                    .disabled(isGenerating)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
             }
         }
@@ -204,18 +277,6 @@ struct RecipeGenerationSheet: View {
             // 預設全選所有食材
             selectedFoods = Set(foods.filter { $0.quantity > 0 }.map { $0.id })
             toolsVM.loadTools()
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    isPresented = false
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color.warmGray)
-                }
-            }
         }
     }
     
@@ -232,11 +293,25 @@ struct RecipeGenerationSheet: View {
             preferences: selectedPreferences
         )
         
-        // 模擬生成延遲
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isGenerating = false
-            onGenerate(request)
-            isPresented = false
+        // 使用 RecipeService 生成食譜
+        Task {
+            do {
+                let recipeService = RecipeService()
+                let generatedRecipes = try await recipeService.generateRecipes(from: request)
+                
+                await MainActor.run {
+                    isGenerating = false
+                    onGenerate(request)
+                    isPresented = false
+                }
+            } catch {
+                await MainActor.run {
+                    isGenerating = false
+                    // 即使出錯也要關閉彈窗
+                    isPresented = false
+                }
+                print("生成食譜時發生錯誤: \(error)")
+            }
         }
     }
 }

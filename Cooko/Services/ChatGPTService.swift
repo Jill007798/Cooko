@@ -62,13 +62,41 @@ class ChatGPTService: ObservableObject {
         return await sendRequest(prompt: prompt)
     }
     
+    func generateRecipeSuggestion(from ingredients: [FoodItem], tools: [CookingTool], preferences: [PreferenceOption]) async -> String? {
+        let ingredientNames = ingredients.map { "\($0.name)（\($0.quantity)\($0.unit)）" }.joined(separator: "、")
+        let toolNames = tools.map { "\($0.emoji)\($0.name)" }.joined(separator: "、")
+        let preferenceNames = preferences.map { "\($0.emoji)\($0.title)" }.joined(separator: "、")
+        
+        let prompt = """
+        根據以下資訊生成4道食譜：
+        
+        食材：\(ingredientNames)
+        可用工具：\(toolNames)
+        偏好：\(preferenceNames)
+        
+        請為每道食譜提供：
+        1. 料理名稱
+        2. 所需材料（基於提供的食材）
+        3. 烹飪步驟（3-5步）
+        4. 標籤（如：健康飲食、快速省時、創意料理等）
+        5. 小貼士
+        
+        請用繁體中文回答，內容要實用且符合用戶偏好。
+        """
+        
+        return await sendRequest(prompt: prompt)
+    }
+    
     private func sendRequest(prompt: String) async -> String? {
         guard isConfigured else {
-            print("ChatGPT API Key not configured")
+            print("🚫 ChatGPT API Key not configured")
             return nil
         }
         
-        guard let url = URL(string: baseURL) else { return nil }
+        guard let url = URL(string: baseURL) else { 
+            print("❌ Invalid API URL: \(baseURL)")
+            return nil 
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -87,13 +115,43 @@ class ChatGPTService: ObservableObject {
         do {
             request.httpBody = try JSONEncoder().encode(requestBody)
             
-            let (data, _) = try await URLSession.shared.data(for: request)
-            let response = try JSONDecoder().decode(ChatGPTResponse.self, from: data)
+            // 記錄請求內容
+            print("📤 ChatGPT API Request:")
+            print("URL: \(baseURL)")
+            print("Model: \(requestBody.model)")
+            print("Max Tokens: \(requestBody.maxTokens)")
+            print("Temperature: \(requestBody.temperature)")
+            print("Prompt: \(prompt)")
+            print("Request Body: \(String(data: request.httpBody!, encoding: .utf8) ?? "Failed to encode")")
+            print("---")
             
-            return response.choices.first?.message.content
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // 記錄響應狀態
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📥 ChatGPT API Response:")
+                print("Status Code: \(httpResponse.statusCode)")
+                print("Response Headers: \(httpResponse.allHeaderFields)")
+            }
+            
+            // 記錄響應內容
+            let responseString = String(data: data, encoding: .utf8) ?? "Failed to decode response"
+            print("Response Body: \(responseString)")
+            print("---")
+            
+            let chatGPTResponse = try JSONDecoder().decode(ChatGPTResponse.self, from: data)
+            let content = chatGPTResponse.choices.first?.message.content
+            
+            print("✅ ChatGPT API Success - Content Length: \(content?.count ?? 0)")
+            print("Generated Content: \(content ?? "No content")")
+            print("==========================================")
+            
+            return content
             
         } catch {
-            print("ChatGPT API Error: \(error)")
+            print("❌ ChatGPT API Error: \(error)")
+            print("Error Details: \(error.localizedDescription)")
+            print("==========================================")
             return nil
         }
     }
