@@ -76,6 +76,30 @@ struct GuidedModeView: View {
                             .foregroundStyle(Color.warmGray)
                             .multilineTextAlignment(.center)
                         
+                        // API Key 未配置的提示
+                        VStack(spacing: 12) {
+                            Text("💡 提示")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.olive)
+                            
+                            Text("如需使用 AI 功能，請在 APIConfig.swift 中配置 OpenAI API Key")
+                                .font(.caption)
+                                .foregroundStyle(Color.charcoal.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.olive.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.olive.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 20)
+                        
                         Button {
                             loadGuidedMode()
                         } label: {
@@ -309,18 +333,42 @@ struct GuidedModeView: View {
         Task {
             do {
                 let chatGPTService = ChatGPTService()
-                let guidedRecipe = try await chatGPTService.generateGuidedRecipe(from: recipe)
                 
-                await MainActor.run {
-                    self.guidedSteps = guidedRecipe.steps
-                    self.isLoading = false
+                // 檢查 API Key 是否已配置
+                if chatGPTService.isConfigured {
+                    let guidedRecipe = try await chatGPTService.generateGuidedRecipe(from: recipe)
+                    
+                    await MainActor.run {
+                        self.guidedSteps = guidedRecipe.steps
+                        self.isLoading = false
+                    }
+                } else {
+                    // API Key 未配置，使用本地模式
+                    await MainActor.run {
+                        self.guidedSteps = generateLocalGuidedSteps()
+                        self.isLoading = false
+                    }
                 }
             } catch {
                 print("❌ 載入傻瓜模式失敗: \(error)")
                 await MainActor.run {
+                    // 如果 AI 模式失敗，回退到本地模式
+                    self.guidedSteps = generateLocalGuidedSteps()
                     self.isLoading = false
                 }
             }
+        }
+    }
+    
+    private func generateLocalGuidedSteps() -> [GuidedStep] {
+        // 本地模式：將原始步驟轉換為簡單的指導步驟
+        return recipe.steps.enumerated().map { index, step in
+            GuidedStep(
+                id: index + 1,
+                command: step,
+                durationSec: nil,
+                parallelOk: false
+            )
         }
     }
     
