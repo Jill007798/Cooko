@@ -1,5 +1,19 @@
 import Foundation
 
+enum GuidedModeError: Error, LocalizedError {
+    case apiError(String)
+    case parseError(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .apiError(let message):
+            return "API 錯誤: \(message)"
+        case .parseError(let message):
+            return "解析錯誤: \(message)"
+        }
+    }
+}
+
 class ChatGPTService: ObservableObject {
     private let apiKey: String
     private let baseURL = "https://api.openai.com/v1/chat/completions"
@@ -85,6 +99,75 @@ class ChatGPTService: ObservableObject {
         """
         
         return await sendRequest(prompt: prompt)
+    }
+    
+    func generateGuidedRecipe(from recipe: Recipe) async throws -> GuidedRecipe {
+        let ingredients = recipe.ingredients.joined(separator: "、")
+        let originalSteps = recipe.steps.joined(separator: "\n")
+        
+        let prompt = """
+        你是一個料理助手。
+        請將以下食譜轉換成「逐步口令模式」，並同時考慮時間管理。
+
+        食譜名稱：\(recipe.title)
+        食材：\(ingredients)
+        原始步驟：
+        \(originalSteps)
+
+        規則：
+        - 步驟要依照「最長時間的動作優先」來排序，例如泡米需要 30 分鐘，要最先做。
+        - 每一步必須用一句話，動詞開頭。
+        - 語氣簡短清楚，像語音助手下指令。
+        - 對需要等待的步驟（例如浸泡、燉煮），要在適當時機插入「同時」可以做的事情。
+        - 回傳的步驟編號要依序排列。
+
+        請回傳 JSON 格式：
+        {
+          "title": "食譜名稱",
+          "steps": [
+            {"id": 1, "command": "先把米洗乾淨，泡在水裡 30 分鐘。", "duration_sec": 1800, "parallel_ok": true},
+            {"id": 2, "command": "泡米的時候，切好所有蔬菜。"},
+            {"id": 3, "command": "醃雞腿十五分鐘。", "duration_sec": 900, "parallel_ok": true}
+          ]
+        }
+        """
+        
+        guard let response = await sendRequest(prompt: prompt) else {
+            throw GuidedModeError.apiError("無法取得 AI 回應")
+        }
+        
+        // 嘗試解析 JSON 回應
+        guard let jsonData = response.data(using: .utf8) else {
+            throw GuidedModeError.parseError("無法解析回應資料")
+        }
+        
+        do {
+            let guidedRecipe = try JSONDecoder().decode(GuidedRecipe.self, from: jsonData)
+            return guidedRecipe
+        } catch {
+            print("❌ JSON 解析失敗: \(error)")
+            print("原始回應: \(response)")
+            
+            // 如果 JSON 解析失敗，嘗試從文字中提取 JSON
+            if let jsonString = extractJSONFromText(response) {
+                if let jsonData = jsonString.data(using: .utf8),
+                   let guidedRecipe = try? JSONDecoder().decode(GuidedRecipe.self, from: jsonData) {
+                    return guidedRecipe
+                }
+            }
+            
+            throw GuidedModeError.parseError("無法解析 AI 回應為有效格式")
+        }
+    }
+    
+    private func extractJSONFromText(_ text: String) -> String? {
+        // 尋找 JSON 區塊
+        if let startRange = text.range(of: "{", options: .regularExpression),
+           let endRange = text.range(of: "}", options: .regularExpression, range: startRange.upperBound..<text.endIndex) {
+            return String(text[startRange.lowerBound...endRange.upperBound])
+        }
+        
+        return nil
     }
     
     private func sendRequest(prompt: String) async -> String? {

@@ -3,6 +3,7 @@ import SwiftUI
 struct RecipeDetailView: View {
     let recipe: Recipe
     let onDismiss: () -> Void
+    @State private var showGuidedMode = false
     
     var body: some View {
         NavigationView {
@@ -53,6 +54,35 @@ struct RecipeDetailView: View {
                                     TagChip(text: tag, color: Color.olive.opacity(0.8))
                                 }
                             }
+                            
+                            // 傻瓜模式按鈕
+                            Button {
+                                showGuidedMode = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.title3)
+                                    
+                                    Text("傻瓜模式")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(
+                                    Capsule()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.olive, Color.olive.opacity(0.8)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .shadow(color: .olive.opacity(0.3), radius: 8, x: 0, y: 4)
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
@@ -289,6 +319,11 @@ struct RecipeDetailView: View {
                     }
                 }
                 
+            }
+            .sheet(isPresented: $showGuidedMode) {
+                GuidedModeView(recipe: recipe) {
+                    showGuidedMode = false
+                }
             }
         }
     }
