@@ -7,9 +7,6 @@ struct GuidedModeView: View {
     @State private var guidedSteps: [GuidedStep] = []
     @State private var currentStepIndex = 0
     @State private var isLoading = false
-    @State private var timer: Timer?
-    @State private var timeRemaining: Int = 0
-    @State private var isTimerRunning = false
     
     var currentStep: GuidedStep? {
         guard currentStepIndex < guidedSteps.count else { return nil }
@@ -147,42 +144,22 @@ struct GuidedModeView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 20)
                             
-                            // 計時器（如果有）
+                            // 等待提示（如果有）
                             if let duration = step.durationSec, duration > 0 {
                                 VStack(spacing: 12) {
                                     Text("⏰ 需要等待")
                                         .font(.headline)
                                         .foregroundStyle(Color.warnOrange)
                                     
-                                    Text(formatTime(timeRemaining))
+                                    Text(formatTime(duration))
                                         .font(.largeTitle)
                                         .fontWeight(.bold)
                                         .foregroundStyle(Color.charcoal)
                                         .monospacedDigit()
                                     
-                                    Button {
-                                        if isTimerRunning {
-                                            stopTimer()
-                                        } else {
-                                            startTimer(duration: duration)
-                                        }
-                                    } label: {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: isTimerRunning ? "pause.circle.fill" : "play.circle.fill")
-                                                .font(.title2)
-                                            
-                                            Text(isTimerRunning ? "暫停" : "開始計時")
-                                                .font(.headline)
-                                                .fontWeight(.semibold)
-                                        }
-                                        .foregroundStyle(.white)
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 10)
-                                        .background(
-                                            Capsule()
-                                                .fill(isTimerRunning ? Color.warnOrange : Color.olive)
-                                        )
-                                    }
+                                    Text("請自行計時")
+                                        .font(.subheadline)
+                                        .foregroundStyle(Color.warmGray)
                                 }
                                 .padding(.horizontal, 20)
                             }
@@ -322,9 +299,6 @@ struct GuidedModeView: View {
         .onAppear {
             loadGuidedMode()
         }
-        .onDisappear {
-            stopTimer()
-        }
     }
     
     private func loadGuidedMode() {
@@ -413,7 +387,6 @@ struct GuidedModeView: View {
     }
     
     private func nextStep() {
-        stopTimer()
         if currentStepIndex < guidedSteps.count - 1 {
             let oldIndex = currentStepIndex
             currentStepIndex += 1
@@ -433,7 +406,6 @@ struct GuidedModeView: View {
     }
     
     private func previousStep() {
-        stopTimer()
         if currentStepIndex > 0 {
             let oldIndex = currentStepIndex
             currentStepIndex -= 1
@@ -446,43 +418,6 @@ struct GuidedModeView: View {
         }
     }
     
-    private func startTimer(duration: Int) {
-        timeRemaining = duration
-        isTimerRunning = true
-        
-        print("⏰ 開始計時")
-        print("  - 總時間: \(duration) 秒")
-        print("  - 當前步驟: \(currentStepIndex + 1)")
-        if let step = currentStep {
-            print("  - 步驟指令: \(step.command)")
-        }
-        
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if self.timeRemaining > 0 {
-                self.timeRemaining -= 1
-                
-                // 每 10 秒或最後 5 秒時記錄
-                if self.timeRemaining % 10 == 0 || self.timeRemaining <= 5 {
-                    print("⏱️ 計時中: 剩餘 \(self.timeRemaining) 秒")
-                }
-            } else {
-                print("🔔 計時結束！")
-                self.stopTimer()
-                // 計時結束，可以自動進入下一步或顯示提示
-            }
-        }
-    }
-    
-    private func stopTimer() {
-        if isTimerRunning {
-            print("⏹️ 停止計時")
-            print("  - 剩餘時間: \(timeRemaining) 秒")
-        }
-        
-        timer?.invalidate()
-        timer = nil
-        isTimerRunning = false
-    }
     
     private func formatTime(_ seconds: Int) -> String {
         let minutes = seconds / 60
