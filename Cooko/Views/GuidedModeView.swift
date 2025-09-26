@@ -375,15 +375,48 @@ struct GuidedModeView: View {
     }
     
     private func generateLocalGuidedSteps() -> [GuidedStep] {
-        // 本地模式：將原始步驟轉換為簡單的指導步驟
-        return recipe.steps.enumerated().map { index, step in
-            GuidedStep(
+        // 本地模式：將原始步驟轉換為智能的指導步驟
+        var guidedSteps: [GuidedStep] = []
+        
+        for (index, step) in recipe.steps.enumerated() {
+            let command = step.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 智能分析步驟，添加時間和並行提示
+            var durationSec: Int? = nil
+            var parallelOk = false
+            
+            // 分析是否需要等待時間
+            if command.contains("蒸") || command.contains("煮") || command.contains("燉") || command.contains("泡") {
+                if command.contains("15分鐘") || command.contains("15分") {
+                    durationSec = 900
+                } else if command.contains("10分鐘") || command.contains("10分") {
+                    durationSec = 600
+                } else if command.contains("20分鐘") || command.contains("20分") {
+                    durationSec = 1200
+                } else if command.contains("30分鐘") || command.contains("30分") {
+                    durationSec = 1800
+                } else if command.contains("5分鐘") || command.contains("5分") {
+                    durationSec = 300
+                } else {
+                    durationSec = 600 // 預設6分鐘
+                }
+                parallelOk = true
+            }
+            
+            // 分析是否可以並行操作
+            if command.contains("切") || command.contains("洗") || command.contains("準備") || command.contains("調味") {
+                parallelOk = true
+            }
+            
+            guidedSteps.append(GuidedStep(
                 id: index + 1,
-                command: step,
-                durationSec: nil,
-                parallelOk: false
-            )
+                command: command,
+                durationSec: durationSec,
+                parallelOk: parallelOk
+            ))
         }
+        
+        return guidedSteps
     }
     
     private func nextStep() {
