@@ -330,31 +330,71 @@ struct GuidedModeView: View {
     private func loadGuidedMode() {
         isLoading = true
         
+        print("🚀 開始載入傻瓜模式")
+        print("📋 食譜: \(recipe.title)")
+        print("📝 原始步驟數量: \(recipe.steps.count)")
+        
         Task {
             do {
                 let chatGPTService = ChatGPTService()
                 
                 // 檢查 API Key 是否已配置
                 if chatGPTService.isConfigured {
+                    print("✅ API Key 已配置，使用 AI 優化模式")
+                    print("🤖 正在呼叫 ChatGPT API...")
+                    
                     let guidedRecipe = try await chatGPTService.generateGuidedRecipe(from: recipe)
+                    
+                    print("🎉 AI 優化完成！")
+                    print("📊 優化結果:")
+                    print("  - 食譜標題: \(guidedRecipe.title)")
+                    print("  - 優化步驟數量: \(guidedRecipe.steps.count)")
+                    
+                    for (index, step) in guidedRecipe.steps.enumerated() {
+                        print("  - 步驟 \(index + 1): \(step.command)")
+                        if let duration = step.durationSec {
+                            print("    * 需要等待: \(duration) 秒")
+                        }
+                        if step.parallelOk {
+                            print("    * 可並行操作")
+                        }
+                    }
                     
                     await MainActor.run {
                         self.guidedSteps = guidedRecipe.steps
                         self.isLoading = false
                     }
                 } else {
-                    // API Key 未配置，使用本地模式
+                    print("⚠️ API Key 未配置，使用本地模式")
+                    print("🔄 將原始步驟轉換為指導模式...")
+                    
                     await MainActor.run {
                         self.guidedSteps = generateLocalGuidedSteps()
                         self.isLoading = false
+                        
+                        print("📱 本地模式載入完成")
+                        print("📊 本地模式結果:")
+                        print("  - 步驟數量: \(self.guidedSteps.count)")
+                        for (index, step) in self.guidedSteps.enumerated() {
+                            print("  - 步驟 \(index + 1): \(step.command)")
+                        }
                     }
                 }
             } catch {
-                print("❌ 載入傻瓜模式失敗: \(error)")
+                print("❌ AI 模式載入失敗: \(error)")
+                print("🔄 自動回退到本地模式...")
+                
                 await MainActor.run {
                     // 如果 AI 模式失敗，回退到本地模式
                     self.guidedSteps = generateLocalGuidedSteps()
                     self.isLoading = false
+                    
+                    print("📱 本地模式回退完成")
+                    print("📊 回退模式結果:")
+                    print("  - 步驟數量: \(self.guidedSteps.count)")
+                    for (index, step) in self.guidedSteps.enumerated() {
+                        print("  - 步驟 \(index + 1): \(step.command)")
+                    }
                 }
             }
         }
@@ -375,14 +415,34 @@ struct GuidedModeView: View {
     private func nextStep() {
         stopTimer()
         if currentStepIndex < guidedSteps.count - 1 {
+            let oldIndex = currentStepIndex
             currentStepIndex += 1
+            
+            print("➡️ 進入下一步")
+            print("  - 從步驟 \(oldIndex + 1) 到步驟 \(currentStepIndex + 1)")
+            if let step = currentStep {
+                print("  - 新指令: \(step.command)")
+                if let duration = step.durationSec {
+                    print("  - 需要等待: \(duration) 秒")
+                }
+                if step.parallelOk {
+                    print("  - 可並行操作")
+                }
+            }
         }
     }
     
     private func previousStep() {
         stopTimer()
         if currentStepIndex > 0 {
+            let oldIndex = currentStepIndex
             currentStepIndex -= 1
+            
+            print("⬅️ 回到上一步")
+            print("  - 從步驟 \(oldIndex + 1) 到步驟 \(currentStepIndex + 1)")
+            if let step = currentStep {
+                print("  - 當前指令: \(step.command)")
+            }
         }
     }
     
@@ -390,17 +450,35 @@ struct GuidedModeView: View {
         timeRemaining = duration
         isTimerRunning = true
         
+        print("⏰ 開始計時")
+        print("  - 總時間: \(duration) 秒")
+        print("  - 當前步驟: \(currentStepIndex + 1)")
+        if let step = currentStep {
+            print("  - 步驟指令: \(step.command)")
+        }
+        
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if timeRemaining > 0 {
-                timeRemaining -= 1
+            if self.timeRemaining > 0 {
+                self.timeRemaining -= 1
+                
+                // 每 10 秒或最後 5 秒時記錄
+                if self.timeRemaining % 10 == 0 || self.timeRemaining <= 5 {
+                    print("⏱️ 計時中: 剩餘 \(self.timeRemaining) 秒")
+                }
             } else {
-                stopTimer()
+                print("🔔 計時結束！")
+                self.stopTimer()
                 // 計時結束，可以自動進入下一步或顯示提示
             }
         }
     }
     
     private func stopTimer() {
+        if isTimerRunning {
+            print("⏹️ 停止計時")
+            print("  - 剩餘時間: \(timeRemaining) 秒")
+        }
+        
         timer?.invalidate()
         timer = nil
         isTimerRunning = false
