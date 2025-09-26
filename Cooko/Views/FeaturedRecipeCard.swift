@@ -98,7 +98,7 @@ struct FeaturedRecipeCard: View {
                 }
                 .padding(16)
             }
-            .frame(maxWidth: .infinity, minHeight: 180)
+            .frame(maxWidth: .infinity, minHeight: 160)
         }
         .buttonStyle(.plain)
     }
