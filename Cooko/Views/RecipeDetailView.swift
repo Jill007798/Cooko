@@ -295,30 +295,71 @@ struct RecipeDetailView: View {
                     Button {
                         showGuidedMode = true
                     } label: {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             Image(systemName: "play.circle.fill")
-                                .font(.title3)
+                                .font(.title2)
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
                             
                             Text("傻瓜模式")
                                 .font(.subheadline)
-                                .fontWeight(.semibold)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
                         }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
                         .background(
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.olive, Color.olive.opacity(0.8)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
+                            ZStack {
+                                // 主背景漸層
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.olive,
+                                                Color.olive.opacity(0.9),
+                                                Color.olive.opacity(0.8)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
                                     )
-                                )
-                                .shadow(color: .olive.opacity(0.3), radius: 4, x: 0, y: 2)
+                                
+                                // 內層光澤效果
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.white.opacity(0.3),
+                                                Color.clear,
+                                                Color.black.opacity(0.1)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                
+                                // 邊框
+                                Capsule()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.white.opacity(0.4),
+                                                Color.black.opacity(0.2)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            }
                         )
+                        .shadow(color: .olive.opacity(0.4), radius: 6, x: 0, y: 3)
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
                     .buttonStyle(.plain)
+                    .scaleEffect(1.0)
+                    .animation(.easeInOut(duration: 0.1), value: showGuidedMode)
                 }
             }
             .sheet(isPresented: $showGuidedMode) {

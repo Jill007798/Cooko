@@ -220,7 +220,7 @@ struct GuidedModeView: View {
                                     // 主要指令
                                     VStack(spacing: 20) {
                                         Text(step.command)
-                                            .font(.largeTitle)
+                                            .font(.system(size: 48))
                                             .fontWeight(.bold)
                                             .foregroundStyle(Color.charcoal)
                                             .multilineTextAlignment(.center)
@@ -230,17 +230,17 @@ struct GuidedModeView: View {
                                         if let duration = step.durationSec, duration > 0 {
                                             VStack(spacing: 12) {
                                                 Text("⏰ 需要等待")
-                                                    .font(.title2)
+                                                    .font(.system(size: 32))
                                                     .foregroundStyle(Color.warnOrange)
                                                 
                                                 Text(formatTime(duration))
-                                                    .font(.system(size: 60))
+                                                    .font(.system(size: 80))
                                                     .fontWeight(.bold)
                                                     .foregroundStyle(Color.charcoal)
                                                     .monospacedDigit()
                                                 
                                                 Text("請自行計時")
-                                                    .font(.headline)
+                                                    .font(.system(size: 24))
                                                     .foregroundStyle(Color.warmGray)
                                             }
                                             .padding(.horizontal, 20)
@@ -255,13 +255,13 @@ struct GuidedModeView: View {
                                                         .foregroundStyle(Color.warnOrange)
                                                     
                                                     Text("可以同時準備")
-                                                        .font(.headline)
+                                                        .font(.system(size: 24))
                                                         .fontWeight(.medium)
                                                         .foregroundStyle(Color.warnOrange)
                                                 }
                                                 
                                                 Text("趁等待時間準備其他食材或工具")
-                                                    .font(.subheadline)
+                                                    .font(.system(size: 20))
                                                     .foregroundStyle(Color.charcoal.opacity(0.7))
                                                     .multilineTextAlignment(.center)
                                             }
@@ -311,7 +311,7 @@ struct GuidedModeView: View {
                         // 主要指令
                         VStack(spacing: 20) {
                             Text(step.command)
-                                .font(.title2)
+                                .font(.system(size: 36))
                                 .fontWeight(.bold)
                                 .foregroundStyle(Color.charcoal)
                                 .multilineTextAlignment(.center)
@@ -321,17 +321,17 @@ struct GuidedModeView: View {
                             if let duration = step.durationSec, duration > 0 {
                                 VStack(spacing: 12) {
                                     Text("⏰ 需要等待")
-                                        .font(.headline)
+                                        .font(.system(size: 28))
                                         .foregroundStyle(Color.warnOrange)
                                     
                                     Text(formatTime(duration))
-                                        .font(.largeTitle)
+                                        .font(.system(size: 64))
                                         .fontWeight(.bold)
                                         .foregroundStyle(Color.charcoal)
                                         .monospacedDigit()
                                     
                                     Text("請自行計時")
-                                        .font(.subheadline)
+                                        .font(.system(size: 20))
                                         .foregroundStyle(Color.warmGray)
                                 }
                                 .padding(.horizontal, 20)
@@ -346,13 +346,13 @@ struct GuidedModeView: View {
                                             .foregroundStyle(Color.warnOrange)
                                         
                                         Text("可以同時準備")
-                                            .font(.caption)
+                                            .font(.system(size: 18))
                                             .fontWeight(.medium)
                                             .foregroundStyle(Color.warnOrange)
                                     }
                                     
                                     Text("趁等待時間準備其他食材或工具")
-                                        .font(.caption)
+                                        .font(.system(size: 16))
                                         .foregroundStyle(Color.charcoal.opacity(0.7))
                                         .multilineTextAlignment(.center)
                                 }
