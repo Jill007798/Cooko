@@ -19,7 +19,7 @@ class ChatGPTService: ObservableObject {
     private let baseURL = "https://api.openai.com/v1/chat/completions"
     
     init() {
-        self.apiKey = APIConfig.openAIAPIKey
+        self.apiKey = APIConfig.getAPIKey() ?? ""
     }
     
     var isConfigured: Bool {
