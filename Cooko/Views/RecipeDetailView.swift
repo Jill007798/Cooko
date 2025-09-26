@@ -193,7 +193,7 @@ struct RecipeDetailView: View {
                                     )
                                 } else {
                                     ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
-                                        HStack(alignment: .top, spacing: 16) {
+                                        HStack(alignment: .center, spacing: 16) {
                                             // 步驟編號
                                             Text("\(index + 1)")
                                                 .font(.headline)
@@ -211,6 +211,7 @@ struct RecipeDetailView: View {
                                                 .font(.subheadline)
                                                 .foregroundStyle(Color.charcoal)
                                                 .multilineTextAlignment(.leading)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                             
                                             Spacer()
                                         }
