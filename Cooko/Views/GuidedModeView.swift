@@ -8,6 +8,58 @@ struct GuidedModeView: View {
     @State private var currentStepIndex = 0
     @State private var isLoading = false
     
+    // 高亮食材名稱的函數
+    private func highlightIngredients(in text: String) -> AttributedString {
+        var attributedString = AttributedString(text)
+        
+        // 從食譜中提取所有食材名稱
+        let ingredients = recipe.ingredients
+        
+        // 為每個食材創建高亮樣式
+        for ingredient in ingredients {
+            // 清理食材名稱，移除常見的前綴和後綴
+            let cleanIngredient = ingredient
+                .replacingOccurrences(of: "- ", with: "")
+                .replacingOccurrences(of: "* ", with: "")
+                .replacingOccurrences(of: "（", with: "")
+                .replacingOccurrences(of: "）", with: "")
+                .replacingOccurrences(of: "(", with: "")
+                .replacingOccurrences(of: ")", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // 如果食材名稱不為空，則進行高亮
+            if !cleanIngredient.isEmpty {
+                // 使用正則表達式找到所有匹配的食材名稱
+                let pattern = "\\b\(NSRegularExpression.escapedPattern(for: cleanIngredient))\\b"
+                
+                do {
+                    let regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+                    let range = NSRange(location: 0, length: attributedString.characters.count)
+                    
+                    // 從後往前替換，避免索引偏移問題
+                    let matches = regex.matches(in: String(attributedString.characters), options: [], range: range)
+                    
+                    for match in matches.reversed() {
+                        let startIndex = attributedString.index(attributedString.startIndex, offsetByCharacters: match.range.location)
+                        let endIndex = attributedString.index(startIndex, offsetByCharacters: match.range.length)
+                        
+                        // 應用高亮樣式
+                        attributedString[startIndex..<endIndex].foregroundColor = Color.olive
+                        attributedString[startIndex..<endIndex].font = .system(size: 16, weight: .semibold)
+                    }
+                } catch {
+                    // 如果正則表達式失敗，使用簡單的字串替換
+                    if let range = attributedString.range(of: cleanIngredient, options: .caseInsensitive) {
+                        attributedString[range].foregroundColor = Color.olive
+                        attributedString[range].font = .system(size: 16, weight: .semibold)
+                    }
+                }
+            }
+        }
+        
+        return attributedString
+    }
+    
     var currentStep: GuidedStep? {
         guard currentStepIndex < guidedSteps.count else { return nil }
         return guidedSteps[currentStepIndex]
@@ -219,10 +271,9 @@ struct GuidedModeView: View {
                                     
                                     // 主要指令
                                     VStack(spacing: 20) {
-                                        Text(step.command)
+                                        Text(highlightIngredients(in: step.command))
                                             .font(.system(size: 48))
                                             .fontWeight(.bold)
-                                            .foregroundStyle(Color.charcoal)
                                             .multilineTextAlignment(.center)
                                             .padding(.horizontal, 20)
                                         
@@ -310,10 +361,9 @@ struct GuidedModeView: View {
                         
                         // 主要指令
                         VStack(spacing: 20) {
-                            Text(step.command)
+                            Text(highlightIngredients(in: step.command))
                                 .font(.system(size: 36))
                                 .fontWeight(.bold)
-                                .foregroundStyle(Color.charcoal)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 20)
                             
