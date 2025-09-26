@@ -226,7 +226,7 @@ struct GuidedModeView: View {
                                     
                                     // 主要指令
                                     VStack(spacing: 20) {
-                                        Text(step.command)
+                                        Text(formatCommandText(step.command))
                                             .font(.system(size: 48))
                                             .fontWeight(.bold)
                                             .foregroundStyle(Color.charcoal)
@@ -336,7 +336,7 @@ struct GuidedModeView: View {
                         
                         // 主要指令
                         VStack(spacing: 20) {
-                            Text(step.command)
+                            Text(formatCommandText(step.command))
                                 .font(.system(size: 36))
                                 .fontWeight(.bold)
                                 .foregroundStyle(Color.charcoal)
@@ -527,9 +527,7 @@ struct GuidedModeView: View {
     private func loadGuidedMode() {
         isLoading = true
         
-        print("🚀 開始載入傻瓜模式")
-        print("📋 食譜: \(recipe.title)")
-        print("📝 原始步驟數量: \(recipe.steps.count)")
+        // 載入傻瓜模式
         
         Task {
             do {
@@ -537,61 +535,23 @@ struct GuidedModeView: View {
                 
                 // 檢查 API Key 是否已配置
                 if chatGPTService.isConfigured {
-                    print("✅ API Key 已配置，使用 AI 優化模式")
-                    print("🤖 正在呼叫 ChatGPT API...")
-                    
                     let guidedRecipe = try await chatGPTService.generateGuidedRecipe(from: recipe)
-                    
-                    print("🎉 AI 優化完成！")
-                    print("📊 優化結果:")
-                    print("  - 食譜標題: \(guidedRecipe.title)")
-                    print("  - 優化步驟數量: \(guidedRecipe.steps.count)")
-                    
-                    for (index, step) in guidedRecipe.steps.enumerated() {
-                        print("  - 步驟 \(index + 1): \(step.command)")
-                        if let duration = step.durationSec {
-                            print("    * 需要等待: \(duration) 秒")
-                        }
-                        if step.parallelOk {
-                            print("    * 可並行操作")
-                        }
-                    }
                     
                     await MainActor.run {
                         self.guidedSteps = guidedRecipe.steps
                         self.isLoading = false
                     }
                 } else {
-                    print("⚠️ API Key 未配置，使用本地模式")
-                    print("🔄 將原始步驟轉換為指導模式...")
-                    
                     await MainActor.run {
                         self.guidedSteps = generateLocalGuidedSteps()
                         self.isLoading = false
-                        
-                        print("📱 本地模式載入完成")
-                        print("📊 本地模式結果:")
-                        print("  - 步驟數量: \(self.guidedSteps.count)")
-                        for (index, step) in self.guidedSteps.enumerated() {
-                            print("  - 步驟 \(index + 1): \(step.command)")
-                        }
                     }
                 }
             } catch {
-                print("❌ AI 模式載入失敗: \(error)")
-                print("🔄 自動回退到本地模式...")
-                
                 await MainActor.run {
                     // 如果 AI 模式失敗，回退到本地模式
                     self.guidedSteps = generateLocalGuidedSteps()
                     self.isLoading = false
-                    
-                    print("📱 本地模式回退完成")
-                    print("📊 回退模式結果:")
-                    print("  - 步驟數量: \(self.guidedSteps.count)")
-                    for (index, step) in self.guidedSteps.enumerated() {
-                        print("  - 步驟 \(index + 1): \(step.command)")
-                    }
                 }
             }
         }
@@ -650,17 +610,7 @@ struct GuidedModeView: View {
             let oldIndex = currentStepIndex
             currentStepIndex += 1
             
-            print("➡️ 進入下一步")
-            print("  - 從步驟 \(oldIndex + 1) 到步驟 \(currentStepIndex + 1)")
-            if let step = currentStep {
-                print("  - 新指令: \(step.command)")
-                if let duration = step.durationSec {
-                    print("  - 需要等待: \(duration) 秒")
-                }
-                if step.parallelOk {
-                    print("  - 可並行操作")
-                }
-            }
+            // 進入下一步
         }
     }
     
@@ -722,6 +672,25 @@ struct GuidedModeView: View {
                 timer.invalidate()
             }
         }
+    }
+    
+    // 格式化指令文字，讓每個句子換行
+    private func formatCommandText(_ command: String) -> String {
+        // 將常見的標點符號替換為換行符號
+        let formatted = command
+            .replacingOccurrences(of: "。", with: "。\n")
+            .replacingOccurrences(of: "！", with: "！\n")
+            .replacingOccurrences(of: "？", with: "？\n")
+            .replacingOccurrences(of: "，", with: "，\n")
+            .replacingOccurrences(of: "；", with: "；\n")
+            .replacingOccurrences(of: "：", with: "：\n")
+        
+        // 清理多餘的換行符號
+        let cleaned = formatted
+            .replacingOccurrences(of: "\n\n", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        return cleaned
     }
 }
 

@@ -16,24 +16,14 @@ struct RecipeService {
     
     // 使用完整資訊生成食譜（包含偏好、工具、食材）
     func generateRecipes(from request: RecipeGenerationRequest) async throws -> [Recipe] {
-        print("🍳 RecipeService: 開始生成食譜")
-        print("📋 請求內容:")
-        print("  - 食材數量: \(request.foods.count)")
-        print("  - 食材列表: \(request.foods.map { "\($0.name)（\($0.quantity)\($0.unit)）" }.joined(separator: ", "))")
-        print("  - 選擇工具: \(request.selectedTools.map { "\($0.emoji)\($0.name)" }.joined(separator: ", "))")
-        print("  - 選擇偏好: \(request.preferences.map { "\($0.emoji)\($0.title)" }.joined(separator: ", "))")
-        print("---")
+        // 開始生成食譜
         
         // 如果 ChatGPT 已配置，使用 AI 生成
         if chatGPTService.isConfigured {
-            print("🤖 使用 ChatGPT API 生成食譜")
             let recipes = try await generateWithChatGPT(from: request)
-            print("✅ ChatGPT 生成完成，返回 \(recipes.count) 道食譜")
             return recipes
         } else {
-            print("📝 使用模擬數據生成食譜")
             let recipes = try await mockRecipes(from: request)
-            print("✅ 模擬數據生成完成，返回 \(recipes.count) 道食譜")
             return recipes
         }
     }
@@ -165,8 +155,6 @@ struct RecipeService {
     
     // 模擬食譜（完整版本）
     func mockRecipes(from request: RecipeGenerationRequest) async throws -> [Recipe] {
-        print("📝 開始生成模擬食譜")
-        
         let dailyTips = [
             ("🍌 香蕉果昔", "5分鐘完成", "超簡單"),
             ("🥚 滑嫩蒸蛋", "超營養", "10分鐘"),
@@ -191,26 +179,9 @@ struct RecipeService {
         ]
         
         let randomTip = dailyTips.randomElement() ?? ("來點香蕉果昔", "5分鐘完成", "超簡單")
-        print("🎲 隨機選擇靈感: \(randomTip.0)")
         
         // 根據食材、工具和偏好生成具體食譜
-        print("🔍 根據請求參數過濾食譜...")
         let recipes = generateRecipesFromRequest(request)
-        
-        print("✅ 模擬食譜生成完成:")
-        print("  - 生成食譜數量: \(recipes.count)")
-        for (index, recipe) in recipes.enumerated() {
-            print("  - 食譜 \(index + 1): \(recipe.title)")
-            print("    * 標籤: \(recipe.tags.joined(separator: ", "))")
-            print("    * 食材: \(recipe.ingredients.joined(separator: ", "))")
-            print("    * 步驟數: \(recipe.steps.count)")
-            print("    * 小貼士: \(recipe.tip)")
-            if !recipe.requiredTools.isEmpty {
-                print("    * 所需工具: \(recipe.requiredTools.joined(separator: ", "))")
-            }
-            print("    ---")
-        }
-        print("==========================================")
         
         return recipes
     }
@@ -360,10 +331,7 @@ struct RecipeService {
         let availableTools = request.selectedTools.map { $0.name }
         let selectedPreferences = request.preferences.map { $0.title }
         
-        print("🔍 開始過濾食譜:")
-        print("  - 可用食材: \(availableFoods.joined(separator: ", "))")
-        print("  - 可用工具: \(availableTools.joined(separator: ", "))")
-        print("  - 選擇偏好: \(selectedPreferences.joined(separator: ", "))")
+        // 開始過濾食譜
         
         // 基礎食譜庫
         let baseRecipes = [
@@ -472,14 +440,14 @@ struct RecipeService {
         
         // 根據偏好調整食譜
         var filteredRecipes = baseRecipes
-        print("📊 基礎食譜庫: \(baseRecipes.count) 道")
+        // 基礎食譜庫
         
         if selectedPreferences.contains("健康飲食") {
             let beforeCount = filteredRecipes.count
             filteredRecipes = filteredRecipes.filter { recipe in
                 recipe.tags.contains { $0.contains("健康") || $0.contains("營養") }
             }
-            print("🥗 健康飲食過濾: \(beforeCount) → \(filteredRecipes.count) 道")
+            // 健康飲食過濾
         }
         
         if selectedPreferences.contains("快速省時") {
@@ -487,7 +455,7 @@ struct RecipeService {
             filteredRecipes = filteredRecipes.filter { recipe in
                 recipe.tags.contains { $0.contains("分鐘") && Int($0.replacingOccurrences(of: "分鐘", with: "")) ?? 0 <= 10 }
             }
-            print("⚡ 快速省時過濾: \(beforeCount) → \(filteredRecipes.count) 道")
+            // 快速省時過濾
         }
         
         if selectedPreferences.contains("創意料理") {
@@ -495,7 +463,7 @@ struct RecipeService {
             filteredRecipes = filteredRecipes.filter { recipe in
                 recipe.tags.contains { $0.contains("創意") || $0.contains("經典") }
             }
-            print("🎨 創意料理過濾: \(beforeCount) → \(filteredRecipes.count) 道")
+            // 創意料理過濾
         }
         
         // 根據可用食材過濾食譜
@@ -506,22 +474,15 @@ struct RecipeService {
                 }
             }
         }
-        print("🍽️ 食材匹配過濾: \(filteredRecipes.count) → \(suitableRecipes.count) 道")
+        // 食材匹配過濾
         
         // 確保返回 4 份食譜（如果不足則用其他食譜補足）
         let finalRecipes: [Recipe]
         if suitableRecipes.count >= 4 {
             finalRecipes = Array(suitableRecipes.prefix(4))
-            print("✅ 直接返回匹配的食譜: \(finalRecipes.count) 道")
         } else {
             let remainingRecipes = baseRecipes.filter { !suitableRecipes.contains($0) }
             finalRecipes = suitableRecipes + Array(remainingRecipes.prefix(4 - suitableRecipes.count))
-            print("🔄 補充食譜: 匹配 \(suitableRecipes.count) + 補充 \(finalRecipes.count - suitableRecipes.count) = \(finalRecipes.count) 道")
-        }
-        
-        print("📋 最終選定的食譜:")
-        for (index, recipe) in finalRecipes.enumerated() {
-            print("  \(index + 1). \(recipe.title) - \(recipe.tags.joined(separator: ", "))")
         }
         
         return finalRecipes

@@ -198,43 +198,23 @@ class ChatGPTService: ObservableObject {
         do {
             request.httpBody = try JSONEncoder().encode(requestBody)
             
-            // 記錄請求內容
-            print("📤 ChatGPT API Request:")
-            print("URL: \(baseURL)")
-            print("Model: \(requestBody.model)")
-            print("Max Tokens: \(requestBody.maxTokens)")
-            print("Temperature: \(requestBody.temperature)")
-            print("Prompt: \(prompt)")
-            print("Request Body: \(String(data: request.httpBody!, encoding: .utf8) ?? "Failed to encode")")
-            print("---")
+            print("📤 ChatGPT API 請求: \(requestBody.model)")
             
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            // 記錄響應狀態
             if let httpResponse = response as? HTTPURLResponse {
-                print("📥 ChatGPT API Response:")
-                print("Status Code: \(httpResponse.statusCode)")
-                print("Response Headers: \(httpResponse.allHeaderFields)")
+                print("📥 ChatGPT API 回應: \(httpResponse.statusCode)")
             }
-            
-            // 記錄響應內容
-            let responseString = String(data: data, encoding: .utf8) ?? "Failed to decode response"
-            print("Response Body: \(responseString)")
-            print("---")
             
             let chatGPTResponse = try JSONDecoder().decode(ChatGPTResponse.self, from: data)
             let content = chatGPTResponse.choices.first?.message.content
             
-            print("✅ ChatGPT API Success - Content Length: \(content?.count ?? 0)")
-            print("Generated Content: \(content ?? "No content")")
-            print("==========================================")
+            print("✅ ChatGPT API 成功")
             
             return content
             
         } catch {
-            print("❌ ChatGPT API Error: \(error)")
-            print("Error Details: \(error.localizedDescription)")
-            print("==========================================")
+            print("❌ ChatGPT API 錯誤: \(error.localizedDescription)")
             return nil
         }
     }

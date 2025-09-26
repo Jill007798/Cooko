@@ -160,11 +160,7 @@ struct RecipesView: View {
                             // 優先顯示生成的食譜，如果沒有則顯示預設食譜
                             ForEach(Array((generatedRecipes.isEmpty ? recipeVM.recipes : generatedRecipes).enumerated()), id: \.element.id) { index, recipe in
                                 FeaturedRecipeCard(recipe: recipe) {
-                                    print("🔍 點擊食譜: \(recipe.title)")
-                                    print("  - 步驟數量: \(recipe.steps.count)")
-                                    print("  - 步驟內容: \(recipe.steps)")
-                                    print("  - 食材數量: \(recipe.ingredients.count)")
-                                    print("  - 食材內容: \(recipe.ingredients)")
+                                    // 點擊食譜
                                     showRecipeDetail = recipe
                                 }
                             }
@@ -199,35 +195,16 @@ struct RecipesView: View {
     }
     
     private func generateRecipes(with request: RecipeGenerationRequest) {
-        print("🎯 RecipesView: 開始生成食譜流程")
-        print("📊 請求統計:")
-        print("  - 選擇食材: \(request.foods.count) 項")
-        print("  - 選擇工具: \(request.selectedTools.count) 項")
-        print("  - 選擇偏好: \(request.preferences.count) 項")
-        print("---")
+        print("🎯 開始生成食譜")
         
         Task {
             do {
                 let recipeService = RecipeService()
                 let newRecipes = try await recipeService.generateRecipes(from: request)
                 
-                print("🎉 RecipesView: 食譜生成成功")
-                print("📋 生成結果:")
-                for (index, recipe) in newRecipes.enumerated() {
-                    print("  - 食譜 \(index + 1): \(recipe.title)")
-                    print("    * 食材: \(recipe.ingredients.joined(separator: ", "))")
-                    print("    * 標籤: \(recipe.tags.joined(separator: ", "))")
-                    print("    * 步驟數: \(recipe.steps.count)")
-                }
-                print("---")
-                
                 await MainActor.run {
                     generatedRecipes = newRecipes
                     generatedRecipeCount = newRecipes.count
-                    
-                    print("🔄 RecipesView: 更新 UI 狀態")
-                    print("  - 設定 generatedRecipes: \(generatedRecipes.count) 道")
-                    print("  - 設定 generatedRecipeCount: \(generatedRecipeCount)")
                     
                     // 顯示成功 Banner
                     withAnimation(.easeInOut(duration: 0.5)) {
@@ -242,16 +219,10 @@ struct RecipesView: View {
                     }
                 }
             } catch {
-                print("❌ RecipesView: 生成食譜失敗")
-                print("錯誤詳情: \(error)")
-                print("錯誤類型: \(type(of: error))")
-                print("---")
-                
                 // 如果生成失敗，使用預設食譜
                 await MainActor.run {
                     generatedRecipeCount = 4
                     showSuccessBanner = true
-                    print("🔄 RecipesView: 使用預設食譜數量 (4)")
                 }
             }
         }

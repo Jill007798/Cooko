@@ -5,6 +5,7 @@ struct FridgeView: View {
     @StateObject var recipeVM = RecipeViewModel()
     @StateObject var toolsVM = ToolsViewModel()
     @State private var showAdd = false
+    @State private var showAddFoodSheet = false
     @State private var isEditing = false
     @State private var scrollOffset: CGFloat = 0
     @State private var showRecipeGeneration = false
@@ -232,7 +233,7 @@ struct FridgeView: View {
                             // 縮合模式：AddFoodCard 在最前面，自己占一行
                             if !isExpanded {
                                 AddFoodCard {
-                                    showAdd = true
+                                    showAddFoodSheet = true
                                 }
                             }
                             
@@ -256,7 +257,7 @@ struct FridgeView: View {
                             // 展開模式：AddFoodCard 在最後面，自己占一行
                             if isExpanded {
                                 AddFoodCard {
-                                    showAdd = true
+                                    showAddFoodSheet = true
                                 }
                             }
                         }
@@ -388,7 +389,7 @@ struct FridgeView: View {
                 endPoint: .bottom
             )
             .frame(width: UIScreen.main.bounds.width, height: 200)
-            .position(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height - 160)
+            .position(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height - 140)
             .ignoresSafeArea(.all, edges: .bottom)
             .allowsHitTesting(false) // 不攔截觸控事件，讓按鈕可以正常點擊
             .zIndex(0) // 降低zIndex，讓按鈕在上層
@@ -431,7 +432,10 @@ struct FridgeView: View {
         }
         }
         .sheet(isPresented: $showAdd) {
-            AddFoodSheet { vm.add($0) }
+            AddFoodSheet(isPresented: $showAdd)
+        }
+        .sheet(isPresented: $showAddFoodSheet) {
+            AddFoodSheet(isPresented: $showAddFoodSheet)
         }
         .sheet(isPresented: $showRecipeGeneration) {
             RecipeGenerationSheet(
