@@ -8,6 +8,43 @@ struct Recipe: Identifiable, Codable, Equatable {
     var tags: [String]     // e.g. ["快過期優先", "健康飲食"]
     var tip: String        // 小精靈一句話
     var requiredTools: [String] = []  // 需要的工具
+    
+    // 自定義編碼/解碼，忽略 id 欄位
+    enum CodingKeys: String, CodingKey {
+        case title, ingredients, steps, tags, tip, requiredTools
+    }
+    
+    // 自定義初始化器，用於創建 Recipe 實例
+    init(title: String, ingredients: [String], steps: [String], tags: [String], tip: String, requiredTools: [String] = []) {
+        self.id = UUID()
+        self.title = title
+        self.ingredients = ingredients
+        self.steps = steps
+        self.tags = tags
+        self.tip = tip
+        self.requiredTools = requiredTools
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = UUID() // 自動生成新的 ID
+        self.title = try container.decode(String.self, forKey: .title)
+        self.ingredients = try container.decode([String].self, forKey: .ingredients)
+        self.steps = try container.decode([String].self, forKey: .steps)
+        self.tags = try container.decode([String].self, forKey: .tags)
+        self.tip = try container.decode(String.self, forKey: .tip)
+        self.requiredTools = try container.decodeIfPresent([String].self, forKey: .requiredTools) ?? []
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encode(ingredients, forKey: .ingredients)
+        try container.encode(steps, forKey: .steps)
+        try container.encode(tags, forKey: .tags)
+        try container.encode(tip, forKey: .tip)
+        try container.encode(requiredTools, forKey: .requiredTools)
+    }
 }
 
 // 偏好選擇選項

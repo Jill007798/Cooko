@@ -443,6 +443,22 @@ struct GuidedStep: Codable {
         case durationSec = "duration_sec"
         case parallelOk = "parallel_ok"
     }
+    
+    // 自定義初始化器，用於創建 GuidedStep 實例
+    init(id: Int, command: String, durationSec: Int? = nil, parallelOk: Bool = false) {
+        self.id = id
+        self.command = command
+        self.durationSec = durationSec
+        self.parallelOk = parallelOk
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(Int.self, forKey: .id)
+        self.command = try container.decode(String.self, forKey: .command)
+        self.durationSec = try container.decodeIfPresent(Int.self, forKey: .durationSec)
+        self.parallelOk = try container.decodeIfPresent(Bool.self, forKey: .parallelOk) ?? false
+    }
 }
 
 #Preview {
