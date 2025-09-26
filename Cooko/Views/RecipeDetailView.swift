@@ -95,16 +95,6 @@ struct RecipeDetailView: View {
                                     .foregroundStyle(Color.charcoal)
                                 
                                 Spacer()
-                                
-                                Text("\(recipe.ingredients.count) 項")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.warmGray)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color.warmGray.opacity(0.1))
-                                    )
                             }
                             
                             LazyVGrid(columns: [
@@ -153,16 +143,6 @@ struct RecipeDetailView: View {
                                     .foregroundStyle(Color.charcoal)
                                 
                                 Spacer()
-                                
-                                Text("\(recipe.steps.count) 步驟")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.warmGray)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color.warmGray.opacity(0.1))
-                                    )
                             }
                             
                             VStack(spacing: 16) {
@@ -297,7 +277,7 @@ struct RecipeDetailView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "play.circle.fill")
-                                .font(.title3)
+                                .font(.subheadline)
                                 .foregroundStyle(.white)
                             
                             Text("傻瓜模式")
@@ -305,18 +285,11 @@ struct RecipeDetailView: View {
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.white)
                         }
-                        .padding(.horizontal, 14)
+                        .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(
                             Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.olive, Color.olive.opacity(0.8)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .shadow(color: .olive.opacity(0.3), radius: 4, x: 0, y: 2)
+                                .fill(Color.charcoal)
                         )
                     }
                     .buttonStyle(.plain)

@@ -514,8 +514,8 @@ struct FridgeView: View {
                             
                             Spacer()
                             
-                            ForEach(r.tags, id: \.self) { tag in
-                                TagChip(text: tag, color: Color.olive.opacity(0.8))
+                            if let firstTag = r.tags.first {
+                                TagChip(text: firstTag, color: Color.olive.opacity(0.8))
                             }
                             
                             Image(systemName: "chevron.right")

@@ -1,4 +1,5 @@
 import SwiftUI
+import AudioToolbox
 
 struct GuidedModeView: View {
     let recipe: Recipe
@@ -8,57 +9,11 @@ struct GuidedModeView: View {
     @State private var currentStepIndex = 0
     @State private var isLoading = false
     
-    // 高亮食材名稱的函數
-    private func highlightIngredients(in text: String) -> AttributedString {
-        var attributedString = AttributedString(text)
-        
-        // 從食譜中提取所有食材名稱
-        let ingredients = recipe.ingredients
-        
-        // 為每個食材創建高亮樣式
-        for ingredient in ingredients {
-            // 清理食材名稱，移除常見的前綴和後綴
-            let cleanIngredient = ingredient
-                .replacingOccurrences(of: "- ", with: "")
-                .replacingOccurrences(of: "* ", with: "")
-                .replacingOccurrences(of: "（", with: "")
-                .replacingOccurrences(of: "）", with: "")
-                .replacingOccurrences(of: "(", with: "")
-                .replacingOccurrences(of: ")", with: "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            // 如果食材名稱不為空，則進行高亮
-            if !cleanIngredient.isEmpty {
-                // 使用正則表達式找到所有匹配的食材名稱
-                let pattern = "\\b\(NSRegularExpression.escapedPattern(for: cleanIngredient))\\b"
-                
-                do {
-                    let regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
-                    let range = NSRange(location: 0, length: attributedString.characters.count)
-                    
-                    // 從後往前替換，避免索引偏移問題
-                    let matches = regex.matches(in: String(attributedString.characters), options: [], range: range)
-                    
-                    for match in matches.reversed() {
-                        let startIndex = attributedString.index(attributedString.startIndex, offsetByCharacters: match.range.location)
-                        let endIndex = attributedString.index(startIndex, offsetByCharacters: match.range.length)
-                        
-                        // 應用高亮樣式
-                        attributedString[startIndex..<endIndex].foregroundColor = Color.olive
-                        attributedString[startIndex..<endIndex].font = .system(size: 16, weight: .semibold)
-                    }
-                } catch {
-                    // 如果正則表達式失敗，使用簡單的字串替換
-                    if let range = attributedString.range(of: cleanIngredient, options: .caseInsensitive) {
-                        attributedString[range].foregroundColor = Color.olive
-                        attributedString[range].font = .system(size: 16, weight: .semibold)
-                    }
-                }
-            }
-        }
-        
-        return attributedString
-    }
+    // 計時器相關狀態
+    @State private var timer: Timer?
+    @State private var remainingTime: Int = 0
+    @State private var isTimerRunning = false
+    
     
     var currentStep: GuidedStep? {
         guard currentStepIndex < guidedSteps.count else { return nil }
@@ -271,9 +226,10 @@ struct GuidedModeView: View {
                                     
                                     // 主要指令
                                     VStack(spacing: 20) {
-                                        Text(highlightIngredients(in: step.command))
+                                        Text(step.command)
                                             .font(.system(size: 48))
                                             .fontWeight(.bold)
+                                            .foregroundStyle(Color.charcoal)
                                             .multilineTextAlignment(.center)
                                             .padding(.horizontal, 20)
                                         
@@ -284,21 +240,40 @@ struct GuidedModeView: View {
                                                     .font(.system(size: 32))
                                                     .foregroundStyle(Color.warnOrange)
                                                 
-                                                Text(formatTime(duration))
+                                                Text(isTimerRunning ? formatTime(remainingTime) : formatTime(duration))
                                                     .font(.system(size: 80))
                                                     .fontWeight(.bold)
-                                                    .foregroundStyle(Color.charcoal)
+                                                    .foregroundStyle(isTimerRunning ? Color.olive : Color.charcoal)
                                                     .monospacedDigit()
                                                 
-                                                Text("請自行計時")
-                                                    .font(.system(size: 24))
-                                                    .foregroundStyle(Color.warmGray)
+                                                Button(action: {
+                                                    if isTimerRunning {
+                                                        stopTimer()
+                                                    } else {
+                                                        startTimer(duration: duration)
+                                                    }
+                                                }) {
+                                                    HStack(spacing: 8) {
+                                                        Image(systemName: isTimerRunning ? "pause.circle.fill" : "play.circle.fill")
+                                                            .font(.title2)
+                                                        Text(isTimerRunning ? "暫停計時" : "開始計時")
+                                                            .font(.system(size: 24))
+                                                            .fontWeight(.semibold)
+                                                    }
+                                                    .foregroundStyle(.white)
+                                                    .padding(.horizontal, 20)
+                                                    .padding(.vertical, 12)
+                                                    .background(
+                                                        Capsule()
+                                                            .fill(isTimerRunning ? Color.warnOrange : Color.olive)
+                                                    )
+                                                }
                                             }
                                             .padding(.horizontal, 20)
                                         }
                                         
-                                        // 並行提示（如果有）
-                                        if step.parallelOk {
+                                        // 並行提示（只有在有等待時間時才顯示）
+                                        if step.parallelOk && step.durationSec != nil && step.durationSec! > 0 {
                                             VStack(spacing: 8) {
                                                 HStack(spacing: 6) {
                                                     Image(systemName: "lightbulb.fill")
@@ -361,9 +336,10 @@ struct GuidedModeView: View {
                         
                         // 主要指令
                         VStack(spacing: 20) {
-                            Text(highlightIngredients(in: step.command))
+                            Text(step.command)
                                 .font(.system(size: 36))
                                 .fontWeight(.bold)
+                                .foregroundStyle(Color.charcoal)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 20)
                             
@@ -374,21 +350,40 @@ struct GuidedModeView: View {
                                         .font(.system(size: 28))
                                         .foregroundStyle(Color.warnOrange)
                                     
-                                    Text(formatTime(duration))
+                                    Text(isTimerRunning ? formatTime(remainingTime) : formatTime(duration))
                                         .font(.system(size: 64))
                                         .fontWeight(.bold)
-                                        .foregroundStyle(Color.charcoal)
+                                        .foregroundStyle(isTimerRunning ? Color.olive : Color.charcoal)
                                         .monospacedDigit()
                                     
-                                    Text("請自行計時")
-                                        .font(.system(size: 20))
-                                        .foregroundStyle(Color.warmGray)
+                                    Button(action: {
+                                        if isTimerRunning {
+                                            stopTimer()
+                                        } else {
+                                            startTimer(duration: duration)
+                                        }
+                                    }) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: isTimerRunning ? "pause.circle.fill" : "play.circle.fill")
+                                                .font(.title3)
+                                            Text(isTimerRunning ? "暫停計時" : "開始計時")
+                                                .font(.system(size: 20))
+                                                .fontWeight(.semibold)
+                                        }
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            Capsule()
+                                                .fill(isTimerRunning ? Color.warnOrange : Color.olive)
+                                        )
+                                    }
                                 }
                                 .padding(.horizontal, 20)
                             }
                             
-                            // 並行提示（如果有）
-                            if step.parallelOk {
+                            // 並行提示（只有在有等待時間時才顯示）
+                            if step.parallelOk && step.durationSec != nil && step.durationSec! > 0 {
                                 VStack(spacing: 8) {
                                     HStack(spacing: 6) {
                                         Image(systemName: "lightbulb.fill")
@@ -524,6 +519,9 @@ struct GuidedModeView: View {
         .onAppear {
             loadGuidedMode()
         }
+        .onDisappear {
+            stopTimer()
+        }
     }
     
     private func loadGuidedMode() {
@@ -628,8 +626,8 @@ struct GuidedModeView: View {
                 parallelOk = true
             }
             
-            // 分析是否可以並行操作
-            if command.contains("切") || command.contains("洗") || command.contains("準備") || command.contains("調味") {
+            // 分析是否可以並行操作（只有在有等待時間時才顯示並行提示）
+            if durationSec != nil && (command.contains("切") || command.contains("洗") || command.contains("準備") || command.contains("調味")) {
                 parallelOk = true
             }
             
@@ -646,6 +644,9 @@ struct GuidedModeView: View {
     
     private func nextStep() {
         if currentStepIndex < guidedSteps.count - 1 {
+            // 停止當前計時器
+            stopTimer()
+            
             let oldIndex = currentStepIndex
             currentStepIndex += 1
             
@@ -665,6 +666,9 @@ struct GuidedModeView: View {
     
     private func previousStep() {
         if currentStepIndex > 0 {
+            // 停止當前計時器
+            stopTimer()
+            
             let oldIndex = currentStepIndex
             currentStepIndex -= 1
             
@@ -681,6 +685,43 @@ struct GuidedModeView: View {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
         return String(format: "%02d:%02d", minutes, remainingSeconds)
+    }
+    
+    // 計時器功能
+    private func startTimer(duration: Int) {
+        remainingTime = duration
+        isTimerRunning = true
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if remainingTime > 0 {
+                remainingTime -= 1
+            } else {
+                // 時間到，停止計時並響鈴
+                stopTimer()
+                playAlarm()
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+        isTimerRunning = false
+    }
+    
+    private func playAlarm() {
+        // 使用系統音效響鈴 10 秒
+        var alarmCount = 0
+        let _ = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
+            alarmCount += 1
+            
+            // 播放系統音效
+            AudioServicesPlaySystemSound(1005) // 系統通知音
+            
+            if alarmCount >= 20 { // 0.5秒 * 20 = 10秒
+                timer.invalidate()
+            }
+        }
     }
 }
 

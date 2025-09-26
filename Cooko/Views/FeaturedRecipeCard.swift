@@ -40,8 +40,8 @@ struct FeaturedRecipeCard: View {
                             .multilineTextAlignment(.leading)
                         
                         HStack(spacing: 8) {
-                            ForEach(recipe.tags.prefix(3), id: \.self) { tag in
-                                TagChip(text: tag, color: Color.olive.opacity(0.8))
+                            if let firstTag = recipe.tags.first {
+                                TagChip(text: firstTag, color: Color.olive.opacity(0.8))
                             }
                         }
                         
