@@ -3,8 +3,6 @@ import SwiftUI
 struct FoodCard: View {
     let item: FoodItem
     let isEditing: Bool
-    let onIncrease: () -> Void
-    let onDecrease: () -> Void
     let onDelete: () -> Void
     let onEnterEditMode: () -> Void
     var onUse: (() -> Void)?
@@ -15,33 +13,8 @@ struct FoodCard: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(GlassEffect.cardMaterial)
                 .background(
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(.white.opacity(0.1))
-                        
-                        // 即將過期指示器 - 融入背景的橘色暈染
-                        if item.isExpiringSoon {
-                            VStack {
-                                HStack {
-                                    Spacer()
-                                    LinearGradient(
-                                        colors: [
-                                            Color(hex: "#FF8C00").opacity(0.6),
-                                            Color(hex: "#FF8C00").opacity(0.4),
-                                            Color(hex: "#FF8C00").opacity(0.2),
-                                            Color.clear
-                                        ],
-                                        startPoint: .topTrailing,
-                                        endPoint: .bottomLeading
-                                    )
-                                    .frame(width: 40, height: 40)
-                                    .cornerRadius(16)
-                                    .clipped()
-                                }
-                                Spacer()
-                            }
-                        }
-                    }
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(.white.opacity(0.1))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -61,12 +34,6 @@ struct FoodCard: View {
             if isEditing {
                 // 編輯模式：顯示操作按鈕
                 HStack {
-                    Button(action: onDecrease) {
-                        Image(systemName: "minus.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.red)
-                    }
-                    
                     Text(String(item.name.prefix(4)))
                         .font(.headline)
                         .fontWeight(.semibold)
@@ -74,12 +41,6 @@ struct FoodCard: View {
                         .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
                     
                     Spacer()
-                    
-                    Button(action: onIncrease) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.green)
-                    }
                     
                     Button(action: onDelete) {
                         Image(systemName: "trash.fill")
@@ -110,10 +71,6 @@ struct FoodCard: View {
                         .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
                     
                     Spacer()
-                    
-                    Text("\(item.quantity) \(item.unit)")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.charcoal.opacity(0.8))
                 }
                 .padding(12)
             }
@@ -130,6 +87,14 @@ struct FoodCard: View {
                 onEnterEditMode()
             }
         }
+        .simultaneousGesture(
+            TapGesture(count: 2)
+                .onEnded {
+                    if !isEditing {
+                        onEnterEditMode()
+                    }
+                }
+        )
     }
 }
 
@@ -138,14 +103,10 @@ struct FoodCard: View {
         item: FoodItem(
             name: "雞蛋",
             emoji: "🥚",
-            quantity: 8,
-            unit: "顆",
             location: .fridge,
             expiry: Date().addingTimeInterval(60*60*24*2)
         ),
         isEditing: false,
-        onIncrease: {},
-        onDecrease: {},
         onDelete: {},
         onEnterEditMode: {}
     )

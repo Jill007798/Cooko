@@ -60,7 +60,7 @@ struct RecipeService {
         print("🤖 ChatGPT 生成食譜開始")
         
         // 準備食材列表
-        let foodList = request.foods.map { "\($0.name)（\($0.quantity)\($0.unit)）" }.joined(separator: "、")
+        let foodList = request.foods.map { $0.name }.joined(separator: "、")
         
         // 準備工具列表
         let toolList = request.selectedTools.map { "\($0.emoji)\($0.name)" }.joined(separator: "、")
@@ -496,7 +496,7 @@ struct RecipeService {
     }
 
     func generateViaOpenAI(from foods: [FoodItem], apiKey: String) async throws -> [Recipe] {
-        let list = foods.map { "\($0.name)\u{FF08}\($0.quantity)\($0.unit)\u{FF09}" }.joined(separator: "、")
+        let list = foods.map { $0.name }.joined(separator: "、")
         let prompt =
         """
         依據食材：\(list)

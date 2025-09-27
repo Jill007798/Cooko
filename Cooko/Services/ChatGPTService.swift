@@ -77,7 +77,7 @@ class ChatGPTService: ObservableObject {
     }
     
     func generateRecipeSuggestion(from ingredients: [FoodItem], tools: [CookingTool], preferences: [PreferenceOption]) async -> String? {
-        let ingredientNames = ingredients.map { "\($0.name)（\($0.quantity)\($0.unit)）" }.joined(separator: "、")
+        let ingredientNames = ingredients.map { $0.name }.joined(separator: "、")
         let toolNames = tools.map { "\($0.emoji)\($0.name)" }.joined(separator: "、")
         let preferenceNames = preferences.map { "\($0.emoji)\($0.title)" }.joined(separator: "、")
         

@@ -3,6 +3,7 @@ import SwiftUI
 struct RecipeDetailView: View {
     let recipe: Recipe
     let onDismiss: () -> Void
+    let onToggleFeatured: (() -> Void)?
     @State private var showGuidedMode = false
     
     var body: some View {
@@ -42,11 +43,42 @@ struct RecipeDetailView: View {
                     VStack(spacing: 24) {
                         // 食譜標題區域
                         VStack(spacing: 16) {
-                            Text(recipe.title)
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundStyle(Color.charcoal)
-                                .multilineTextAlignment(.center)
+                            HStack {
+                                Text(recipe.title)
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(Color.charcoal)
+                                    .multilineTextAlignment(.center)
+                                
+                                Spacer()
+                                
+                                // 加入精選按鈕
+                                if let onToggleFeatured = onToggleFeatured {
+                                    Button(action: onToggleFeatured) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: recipe.isFeatured ? "star.fill" : "star")
+                                                .font(.title3)
+                                                .foregroundStyle(recipe.isFeatured ? Color.yellow : Color.warmGray)
+                                            
+                                            Text(recipe.isFeatured ? "已精選" : "加入精選")
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundStyle(recipe.isFeatured ? Color.yellow : Color.olive)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            Capsule()
+                                                .fill(recipe.isFeatured ? Color.yellow.opacity(0.1) : Color.olive.opacity(0.1))
+                                                .overlay(
+                                                    Capsule()
+                                                        .stroke(recipe.isFeatured ? Color.yellow.opacity(0.3) : Color.olive.opacity(0.3), lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                             
                             // 標籤
                             HStack(spacing: 8) {
@@ -318,9 +350,14 @@ struct RecipeDetailView: View {
             ],
             tags: ["經典美味", "15分鐘", "家常料理"],
             tip: "用隔夜飯炒更香！記得要大火快炒",
-            requiredTools: ["🍳 平底鍋", "🥄 鍋鏟", "🔥 瓦斯爐"]
-        )
-    ) {
-        // Preview dismiss action
-    }
+            requiredTools: ["🍳 平底鍋", "🥄 鍋鏟", "🔥 瓦斯爐"],
+            isFeatured: false
+        ),
+        onDismiss: {
+            // Preview dismiss action
+        },
+        onToggleFeatured: {
+            // Preview toggle featured action
+        }
+    )
 }

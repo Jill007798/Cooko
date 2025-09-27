@@ -7,6 +7,7 @@ final class RecipeViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let service = RecipeService()
+    private let storageKey = "cooko.featured_recipes.v1"
 
     func generate(from foods: [FoodItem]) async {
         isLoading = true
@@ -29,5 +30,32 @@ final class RecipeViewModel: ObservableObject {
             }
         }
         isLoading = false
+    }
+    
+    // 精選食譜管理
+    func toggleFeatured(_ recipe: Recipe) {
+        guard let index = recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
+        recipes[index].isFeatured.toggle()
+        saveFeaturedRecipes()
+    }
+    
+    var featuredRecipes: [Recipe] {
+        recipes.filter { $0.isFeatured }
+    }
+    
+    private func saveFeaturedRecipes() {
+        let featuredIds = recipes.filter { $0.isFeatured }.map { $0.id }
+        UserDefaults.standard.set(featuredIds.map { $0.uuidString }, forKey: storageKey)
+    }
+    
+    func loadFeaturedRecipes() {
+        guard let featuredIds = UserDefaults.standard.array(forKey: storageKey) as? [String] else { return }
+        let featuredUUIDs = featuredIds.compactMap { UUID(uuidString: $0) }
+        
+        for i in 0..<recipes.count {
+            if featuredUUIDs.contains(recipes[i].id) {
+                recipes[i].isFeatured = true
+            }
+        }
     }
 }

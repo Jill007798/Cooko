@@ -181,9 +181,13 @@ struct RecipesView: View {
             }
         }
         .sheet(item: $showRecipeDetail) { recipe in
-            RecipeDetailView(recipe: recipe) {
-                showRecipeDetail = nil
-            }
+            RecipeDetailView(
+                recipe: recipe,
+                onDismiss: {
+                    showRecipeDetail = nil
+                },
+                onToggleFeatured: nil
+            )
         }
         .onAppear {
             if recipeVM.recipes.isEmpty {
@@ -233,8 +237,8 @@ struct RecipesView: View {
 #Preview {
     RecipesView(
         foods: [
-            FoodItem(name: "雞蛋", emoji: "🥚", quantity: 3, unit: "顆", location: .fridge, expiry: Date().addingTimeInterval(86400 * 3)),
-            FoodItem(name: "白米", emoji: "🍚", quantity: 1, unit: "杯", location: .pantry, expiry: Date().addingTimeInterval(86400 * 7))
+            FoodItem(name: "雞蛋", emoji: "🥚", location: .fridge, expiry: Date().addingTimeInterval(86400 * 3)),
+            FoodItem(name: "白米", emoji: "🍚", location: .pantry, expiry: Date().addingTimeInterval(86400 * 7))
         ]
     ) {
         // Preview back action

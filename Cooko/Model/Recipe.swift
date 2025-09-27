@@ -8,14 +8,15 @@ struct Recipe: Identifiable, Codable, Equatable {
     var tags: [String]     // e.g. ["快過期優先", "健康飲食"]
     var tip: String        // 小精靈一句話
     var requiredTools: [String] = []  // 需要的工具
+    var isFeatured: Bool = false      // 是否為精選食譜
     
     // 自定義編碼/解碼，忽略 id 欄位
     enum CodingKeys: String, CodingKey {
-        case title, ingredients, steps, tags, tip, requiredTools
+        case title, ingredients, steps, tags, tip, requiredTools, isFeatured
     }
     
     // 自定義初始化器，用於創建 Recipe 實例
-    init(title: String, ingredients: [String], steps: [String], tags: [String], tip: String, requiredTools: [String] = []) {
+    init(title: String, ingredients: [String], steps: [String], tags: [String], tip: String, requiredTools: [String] = [], isFeatured: Bool = false) {
         self.id = UUID()
         self.title = title
         self.ingredients = ingredients
@@ -23,6 +24,7 @@ struct Recipe: Identifiable, Codable, Equatable {
         self.tags = tags
         self.tip = tip
         self.requiredTools = requiredTools
+        self.isFeatured = isFeatured
     }
     
     init(from decoder: Decoder) throws {
@@ -34,6 +36,7 @@ struct Recipe: Identifiable, Codable, Equatable {
         self.tags = try container.decode([String].self, forKey: .tags)
         self.tip = try container.decode(String.self, forKey: .tip)
         self.requiredTools = try container.decodeIfPresent([String].self, forKey: .requiredTools) ?? []
+        self.isFeatured = try container.decodeIfPresent(Bool.self, forKey: .isFeatured) ?? false
     }
     
     func encode(to encoder: Encoder) throws {
@@ -44,6 +47,7 @@ struct Recipe: Identifiable, Codable, Equatable {
         try container.encode(tags, forKey: .tags)
         try container.encode(tip, forKey: .tip)
         try container.encode(requiredTools, forKey: .requiredTools)
+        try container.encode(isFeatured, forKey: .isFeatured)
     }
 }
 

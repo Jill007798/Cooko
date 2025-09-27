@@ -69,19 +69,16 @@ struct AddFoodCard: View {
             item: FoodItem(
                 name: "雞蛋",
                 emoji: "🥚",
-                quantity: 3,
-                unit: "顆",
                 location: .fridge,
                 expiry: Date().addingTimeInterval(86400 * 3)
             ),
             isEditing: false,
-            onIncrease: { },
-            onDecrease: { },
             onDelete: { },
-            onEnterEditMode: { }
-        ) {
-            print("Food tapped")
-        }
+            onEnterEditMode: { },
+            onUse: {
+                print("Food tapped")
+            }
+        )
     }
     .padding()
     .background(Color.gray.opacity(0.1))

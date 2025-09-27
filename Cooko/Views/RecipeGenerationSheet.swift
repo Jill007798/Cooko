@@ -219,7 +219,7 @@ struct RecipeGenerationSheet: View {
                             GridItem(.flexible()),
                             GridItem(.flexible())
                         ], spacing: 8) {
-                            ForEach(foods.filter { $0.quantity > 0 }) { food in
+                            ForEach(foods) { food in
                                 FoodSelectionChip(
                                     food: food,
                                     isSelected: selectedFoods.contains(food.id),
@@ -275,7 +275,7 @@ struct RecipeGenerationSheet: View {
         }
         .onAppear {
             // 預設全選所有食材
-            selectedFoods = Set(foods.filter { $0.quantity > 0 }.map { $0.id })
+            selectedFoods = Set(foods.map { $0.id })
             toolsVM.loadTools()
         }
     }
@@ -283,7 +283,7 @@ struct RecipeGenerationSheet: View {
     private func generateRecipes() {
         isGenerating = true
         
-        let selectedIngredients = foods.filter { $0.quantity > 0 && selectedFoods.contains($0.id) }
+        let selectedIngredients = foods.filter { selectedFoods.contains($0.id) }
         let selectedTools = toolsVM.getAvailableTools()
         let selectedPreferences = preferences.filter { $0.isSelected }
         
@@ -473,8 +473,8 @@ struct ToolConfirmationChip: View {
     RecipeGenerationSheet(
         isPresented: .constant(true),
         foods: [
-            FoodItem(name: "雞蛋", emoji: "🥚", quantity: 3, unit: "顆", location: .fridge, expiry: Date().addingTimeInterval(86400 * 3)),
-            FoodItem(name: "白米", emoji: "🍚", quantity: 1, unit: "杯", location: .pantry, expiry: Date().addingTimeInterval(86400 * 7))
+            FoodItem(name: "雞蛋", emoji: "🥚", location: .fridge, expiry: Date().addingTimeInterval(86400 * 3)),
+            FoodItem(name: "白米", emoji: "🍚", location: .pantry, expiry: Date().addingTimeInterval(86400 * 7))
         ]
     ) { _ in
         // Preview action

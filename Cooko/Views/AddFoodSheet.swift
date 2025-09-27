@@ -4,8 +4,6 @@ struct AddFoodSheet: View {
     @Binding var isPresented: Bool
     @State private var selectedMethod: AddFoodMethod = .manual
     @State private var foodName = ""
-    @State private var quantity = ""
-    @State private var unit = "個"
     @State private var isShowingCamera = false
     @State private var isShowingScanner = false
     @State private var isShowingReceiptScanner = false
@@ -27,7 +25,7 @@ struct AddFoodSheet: View {
         
         var description: String {
             switch self {
-            case .manual: return "手動輸入食材名稱和數量"
+            case .manual: return "手動輸入食材名稱"
             case .camera: return "拍照識別食材並自動填入"
             case .receipt: return "掃描發票自動提取食材清單"
             case .card: return "綁定載具自動同步購買紀錄"
@@ -47,6 +45,28 @@ struct AddFoodSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // 標題區域
+                HStack {
+                    // 左上角關閉按鈕
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.title2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.warmGray)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(Color.warmGray.opacity(0.1))
+                            )
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                
                 // 標題
                 VStack(spacing: 8) {
                     Text("新增食材")

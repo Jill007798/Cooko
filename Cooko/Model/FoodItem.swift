@@ -10,8 +10,6 @@ struct FoodItem: Identifiable, Codable, Equatable {
     var id = UUID()
     var name: String
     var emoji: String?     // 有就顯示，無則顯示 icon
-    var quantity: Int
-    var unit: String       // 顆、盒、串...
     var location: StorageLocation
     var expiry: Date?      // 可為空
     var createdAt = Date()
