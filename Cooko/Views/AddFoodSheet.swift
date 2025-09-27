@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct AddFoodSheet: View {
     @Binding var isPresented: Bool
@@ -7,6 +8,14 @@ struct AddFoodSheet: View {
     @State private var isShowingCamera = false
     @State private var isShowingScanner = false
     @State private var isShowingReceiptScanner = false
+    @State private var capturedImages: [UIImage] = []
+    @State private var isShowingImagePicker = false
+    @State private var isShowingPhotoPicker = false
+    @State private var selectedPhotos: [PHPickerResult] = []
+    @State private var isAnalyzing = false
+    @State private var showFoodConfirmation = false
+    @State private var analyzedFoods: [AnalyzedFood] = []
+    @StateObject private var imageAnalysisService = ImageAnalysisService.shared
     
     enum AddFoodMethod: String, CaseIterable {
         case manual = "手動輸入"
@@ -26,7 +35,7 @@ struct AddFoodSheet: View {
         var description: String {
             switch self {
             case .manual: return "手動輸入食材名稱"
-            case .camera: return "拍照識別食材並自動填入"
+            case .camera: return "拍照識別食材，可累積多張照片"
             case .receipt: return "掃描發票自動提取食材清單"
             case .card: return "綁定載具自動同步購買紀錄"
             }
@@ -95,18 +104,31 @@ struct AddFoodSheet: View {
                 }
                 .padding(.horizontal, 20)
                 
-                Spacer()
+                // 拍照功能區域
+                if selectedMethod == .camera {
+                    if isAnalyzing {
+                        analyzingSection
+                    } else {
+                        cameraSection
+                    }
+                } else {
+                    Spacer()
+                }
                 
                 // 底部按鈕
                 VStack(spacing: 12) {
                     Button(action: {
-                        handleMethodSelection()
+                        if selectedMethod == .camera {
+                            handleCameraSubmit()
+                        } else {
+                            handleMethodSelection()
+                        }
                     }) {
                         HStack(spacing: 8) {
-                            Image(systemName: selectedMethod.icon)
+                            Image(systemName: buttonIcon)
                                 .font(.headline)
                             
-                            Text("使用 \(selectedMethod.rawValue)")
+                            Text(buttonText)
                                 .font(.headline)
                                 .fontWeight(.semibold)
                         }
@@ -115,10 +137,11 @@ struct AddFoodSheet: View {
                         .padding(.vertical, 16)
                         .background(
                             Capsule()
-                                .fill(selectedMethod.color)
+                                .fill(buttonColor)
                         )
                     }
                     .buttonStyle(.plain)
+                    .disabled(isButtonDisabled)
                     
                     Button(action: {
                         isPresented = false
@@ -134,12 +157,39 @@ struct AddFoodSheet: View {
             .background(Color(hex: "#F8F9FA"))
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $isShowingCamera) {
-            CameraView { result in
-                // TODO: 處理拍照結果
-                print("拍照結果: \(result)")
+        .sheet(isPresented: $isShowingImagePicker) {
+            ImagePicker(selectedImage: .constant(nil)) { image in
+                if let image = image {
+                    capturedImages.append(image)
+                }
             }
         }
+        .sheet(isPresented: $isShowingPhotoPicker) {
+            PhotoPicker(selectedPhotos: $selectedPhotos)
+        }
+        .onChange(of: selectedPhotos) { _, newPhotos in
+            Task {
+                for photo in newPhotos {
+                    await withCheckedContinuation { continuation in
+                        photo.itemProvider.loadDataRepresentation(forTypeIdentifier: "public.image") { data, error in
+                            if let data = data, let image = UIImage(data: data) {
+                                capturedImages.append(image)
+                            }
+                            continuation.resume()
+                        }
+                    }
+                }
+                selectedPhotos = []
+            }
+        }
+                   .sheet(isPresented: $showFoodConfirmation) {
+                       FoodConfirmationView(
+                           isPresented: $showFoodConfirmation,
+                           analyzedFoods: analyzedFoods,
+                           capturedImages: capturedImages,
+                           onConfirm: handleFoodConfirmation
+                       )
+                   }
         .sheet(isPresented: $isShowingScanner) {
             ScannerView { result in
                 // TODO: 處理掃描結果
@@ -160,7 +210,7 @@ struct AddFoodSheet: View {
             // TODO: 顯示手動輸入表單
             print("📝 手動輸入")
         case .camera:
-            isShowingCamera = true
+            showCameraOptions()
         case .receipt:
             isShowingReceiptScanner = true
         case .card:
@@ -168,6 +218,293 @@ struct AddFoodSheet: View {
             print("💳 綁定載具")
         }
     }
+    
+    private func showCameraOptions() {
+        // 顯示相機選項的 ActionSheet
+        let alert = UIAlertController(title: "選擇照片來源", message: nil, preferredStyle: .actionSheet)
+        
+        alert.addAction(UIAlertAction(title: "拍照", style: .default) { _ in
+            isShowingImagePicker = true
+        })
+        
+        alert.addAction(UIAlertAction(title: "從相簿選擇", style: .default) { _ in
+            isShowingPhotoPicker = true
+        })
+        
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            window.rootViewController?.present(alert, animated: true)
+        }
+    }
+    
+    private func handleCameraSubmit() {
+        guard !capturedImages.isEmpty else { return }
+        
+        // 開始分析
+        isAnalyzing = true
+        print("📸 開始分析 \(capturedImages.count) 張照片")
+        
+        Task {
+            do {
+                // 調用圖片分析服務
+                let results = try await imageAnalysisService.analyzeFoodImages(capturedImages)
+                
+                await MainActor.run {
+                    analyzedFoods = results
+                    isAnalyzing = false
+                    showFoodConfirmation = true
+                    print("✅ 分析完成，識別出 \(results.count) 種食材")
+                }
+            } catch {
+                await MainActor.run {
+                    isAnalyzing = false
+                    print("❌ 分析失敗: \(error.localizedDescription)")
+                    // 這裡可以顯示錯誤提示給用戶
+                }
+            }
+        }
+    }
+    
+    private func resetCameraState() {
+        capturedImages.removeAll()
+        analyzedFoods.removeAll()
+        showFoodConfirmation = false
+        isAnalyzing = false
+    }
+    
+    private func handleFoodConfirmation(_ selectedFoods: [AnalyzedFood]) {
+        // 將選中的食材添加到冰箱
+        for food in selectedFoods {
+            // TODO: 實際添加到 FridgeViewModel
+            print("✅ 新增食材: \(food.name) (\(food.emoji))")
+        }
+        
+        // 重置狀態並關閉
+        resetCameraState()
+        isPresented = false
+    }
+    
+    // MARK: - 計算屬性
+    private var buttonIcon: String {
+        if selectedMethod == .camera {
+            if isAnalyzing {
+                return "hourglass"
+            } else {
+                return "camera"
+            }
+        } else {
+            return selectedMethod.icon
+        }
+    }
+    
+    private var buttonText: String {
+        if selectedMethod == .camera {
+            if isAnalyzing {
+                return "分析中..."
+            } else {
+                return "分析照片並新增食材"
+            }
+        } else {
+            return "使用 \(selectedMethod.rawValue)"
+        }
+    }
+    
+    private var buttonColor: Color {
+        if selectedMethod == .camera {
+            if isAnalyzing {
+                return Color.gray
+            } else {
+                return capturedImages.isEmpty ? Color.gray : selectedMethod.color
+            }
+        } else {
+            return selectedMethod.color
+        }
+    }
+    
+    private var isButtonDisabled: Bool {
+        if selectedMethod == .camera {
+            if isAnalyzing {
+                return true
+            } else {
+                return capturedImages.isEmpty
+            }
+        } else {
+            return false
+        }
+    }
+    
+    private var cameraSection: some View {
+        VStack(spacing: 20) {
+            // 已拍照片縮圖區域
+            if !capturedImages.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("已拍照片 (\(capturedImages.count))")
+                            .font(.headline)
+                            .foregroundStyle(Color.charcoal)
+                        
+                        Spacer()
+                        
+                        Button("清除全部") {
+                            capturedImages.removeAll()
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    }
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(Array(capturedImages.enumerated()), id: \.offset) { index, image in
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 80, height: 80)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    
+                                    Button(action: {
+                                        capturedImages.remove(at: index)
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.caption)
+                                            .foregroundStyle(.white)
+                                            .background(
+                                                Circle()
+                                                    .fill(.black.opacity(0.6))
+                                            )
+                                    }
+                                    .offset(x: 8, y: -8)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            
+            // 拍照按鈕區域
+            VStack(spacing: 16) {
+                HStack(spacing: 20) {
+                    // 拍照按鈕
+                    Button(action: {
+                        isShowingImagePicker = true
+                    }) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "camera.fill")
+                                .font(.title)
+                                .foregroundStyle(.white)
+                            
+                            Text("拍照")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.white)
+                        }
+                        .frame(width: 80, height: 80)
+                        .background(
+                            Circle()
+                                .fill(Color.olive)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // 相簿按鈕
+                    Button(action: {
+                        isShowingPhotoPicker = true
+                    }) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.title)
+                                .foregroundStyle(Color.olive)
+                            
+                            Text("相簿")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(Color.olive)
+                        }
+                        .frame(width: 80, height: 80)
+                        .background(
+                            Circle()
+                                .fill(Color.olive.opacity(0.1))
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.olive, lineWidth: 2)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                Text("可以累積多張照片，最後一起分析")
+                    .font(.caption)
+                    .foregroundStyle(Color.warmGray)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.vertical, 20)
+    }
+    
+    private var analyzingSection: some View {
+        VStack(spacing: 30) {
+            // 分析動畫
+            VStack(spacing: 20) {
+                ZStack {
+                    Circle()
+                        .fill(Color.olive.opacity(0.1))
+                        .frame(width: 120, height: 120)
+                    
+                    Circle()
+                        .stroke(Color.olive, lineWidth: 3)
+                        .frame(width: 100, height: 100)
+                        .rotationEffect(.degrees(isAnalyzing ? 360 : 0))
+                        .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: isAnalyzing)
+                    
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(Color.olive)
+                }
+                
+                VStack(spacing: 8) {
+                    Text("AI 分析中...")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.charcoal)
+                    
+                    Text("正在識別照片中的食材")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.warmGray)
+                }
+            }
+            
+            // 照片預覽
+            if !capturedImages.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("分析的照片")
+                        .font(.headline)
+                        .foregroundStyle(Color.charcoal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(Array(capturedImages.enumerated()), id: \.offset) { index, image in
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .opacity(0.7)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 40)
+    }
+    
 }
 
 struct MethodCard: View {
