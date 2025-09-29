@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RecipesView: View {
-    @StateObject private var recipeVM = RecipeViewModel()
+    @EnvironmentObject var recipeVM: RecipeViewModel
     @State private var showGenerationSheet = false
     @State private var showRecipeDetail: Recipe?
     @State private var showSuccessBanner = false
@@ -10,6 +10,22 @@ struct RecipesView: View {
     
     let foods: [FoodItem]
     let onBack: () -> Void
+    
+    // 計算屬性：將精選食譜排在前面
+    private var sortedRecipes: [Recipe] {
+        let recipesToShow = generatedRecipes.isEmpty ? recipeVM.recipes : generatedRecipes
+        return recipesToShow.sorted { recipe1, recipe2 in
+            // 精選食譜排在前面
+            if recipe1.isFeatured && !recipe2.isFeatured {
+                return true
+            } else if !recipe1.isFeatured && recipe2.isFeatured {
+                return false
+            } else {
+                // 如果都是精選或都不是精選，保持原有順序
+                return false
+            }
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -157,12 +173,18 @@ struct RecipesView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 12) {
-                            // 優先顯示生成的食譜，如果沒有則顯示預設食譜
-                            ForEach(Array((generatedRecipes.isEmpty ? recipeVM.recipes : generatedRecipes).enumerated()), id: \.element.id) { index, recipe in
-                                FeaturedRecipeCard(recipe: recipe) {
-                                    // 點擊食譜
-                                    showRecipeDetail = recipe
-                                }
+                            // 優先顯示生成的食譜，如果沒有則顯示預設食譜，並將精選食譜排在前面
+                            ForEach(Array(sortedRecipes.enumerated()), id: \.element.id) { index, recipe in
+                                FeaturedRecipeCard(
+                                    recipe: recipe,
+                                    onTap: {
+                                        // 點擊食譜
+                                        showRecipeDetail = recipe
+                                    },
+                                    onToggleFeatured: {
+                                        recipeVM.toggleFeatured(recipe)
+                                    }
+                                )
                             }
                         }
                         .padding(.horizontal, 20)
@@ -186,7 +208,9 @@ struct RecipesView: View {
                 onDismiss: {
                     showRecipeDetail = nil
                 },
-                onToggleFeatured: nil
+                onToggleFeatured: {
+                    recipeVM.toggleFeatured(recipe)
+                }
             )
         }
         .onAppear {

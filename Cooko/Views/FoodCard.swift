@@ -45,7 +45,7 @@ struct FoodCard: View {
                     Button(action: onDelete) {
                         Image(systemName: "trash.fill")
                             .font(.title2)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.red.opacity(0.7))
                     }
                 }
                 .padding(12)

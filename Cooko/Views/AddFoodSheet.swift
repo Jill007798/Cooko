@@ -14,8 +14,17 @@ struct AddFoodSheet: View {
     @State private var selectedPhotos: [PHPickerResult] = []
     @State private var isAnalyzing = false
     @State private var showFoodConfirmation = false
+    @State private var isShowingManualInput = false
     @State private var analyzedFoods: [AnalyzedFood] = []
+    @State private var confirmationData: ConfirmationData?
+    @State private var showNoFoodAlert = false
     @StateObject private var imageAnalysisService = ImageAnalysisService.shared
+    
+    struct ConfirmationData: Identifiable {
+        let id = UUID()
+        let analyzedFoods: [AnalyzedFood]
+        let capturedImages: [UIImage]
+    }
     
     enum AddFoodMethod: String, CaseIterable {
         case manual = "手動輸入"
@@ -182,14 +191,24 @@ struct AddFoodSheet: View {
                 selectedPhotos = []
             }
         }
-                   .sheet(isPresented: $showFoodConfirmation) {
+                   .sheet(item: $confirmationData) { data in
                        FoodConfirmationView(
-                           isPresented: $showFoodConfirmation,
-                           analyzedFoods: analyzedFoods,
-                           capturedImages: capturedImages,
+                           isPresented: Binding(
+                               get: { confirmationData != nil },
+                               set: { if !$0 { confirmationData = nil } }
+                           ),
+                           analyzedFoods: data.analyzedFoods,
+                           capturedImages: data.capturedImages,
                            onConfirm: handleFoodConfirmation
                        )
                    }
+        .alert("未檢測到食材", isPresented: $showNoFoodAlert) {
+            Button("重新選擇") {
+                resetCameraState()
+            }
+        } message: {
+            Text("很抱歉，我們沒有分析出任何食材。請重新嘗試或選擇其他新增方式。")
+        }
         .sheet(isPresented: $isShowingScanner) {
             ScannerView { result in
                 // TODO: 處理掃描結果
@@ -202,13 +221,21 @@ struct AddFoodSheet: View {
                 print("發票掃描結果: \(result)")
             }
         }
+        .sheet(isPresented: $isShowingManualInput) {
+            ManualFoodInputView(
+                isPresented: $isShowingManualInput,
+                onConfirm: { name in
+                    isShowingManualInput = false
+                    handleManualFoodInput(name: name)
+                }
+            )
+        }
     }
     
     private func handleMethodSelection() {
         switch selectedMethod {
         case .manual:
-            // TODO: 顯示手動輸入表單
-            print("📝 手動輸入")
+            isShowingManualInput = true
         case .camera:
             showCameraOptions()
         case .receipt:
@@ -252,10 +279,22 @@ struct AddFoodSheet: View {
                 let results = try await imageAnalysisService.analyzeFoodImages(capturedImages)
                 
                 await MainActor.run {
-                    analyzedFoods = results
-                    isAnalyzing = false
-                    showFoodConfirmation = true
-                    print("✅ 分析完成，識別出 \(results.count) 種食材")
+                    if results.isEmpty {
+                        // 沒有分析出任何食材，直接顯示 alert
+                        showNoFoodDetectedAlert()
+                        isAnalyzing = false
+                    } else {
+                        analyzedFoods = results
+                        isAnalyzing = false
+                        print("✅ 分析完成，識別出 \(results.count) 種食材")
+                        // 延遲一點點時間確保 analyzedFoods 已經設置
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            confirmationData = ConfirmationData(
+                                analyzedFoods: results,
+                                capturedImages: capturedImages
+                            )
+                        }
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -275,6 +314,13 @@ struct AddFoodSheet: View {
     }
     
     private func handleFoodConfirmation(_ selectedFoods: [AnalyzedFood]) {
+        // 檢查是否有選中的食材
+        if selectedFoods.isEmpty {
+            print("⚠️ 沒有選中任何食材")
+            resetCameraState()
+            return
+        }
+        
         // 將選中的食材添加到冰箱
         for food in selectedFoods {
             // TODO: 實際添加到 FridgeViewModel
@@ -283,7 +329,70 @@ struct AddFoodSheet: View {
         
         // 重置狀態並關閉
         resetCameraState()
+        confirmationData = nil
         isPresented = false
+    }
+    
+    private func handleManualFoodInput(name: String) {
+        // 開始 AI 分析手動輸入的食材
+        isAnalyzing = true
+        print("🤖 開始 AI 分析手動輸入: \(name)")
+        
+        Task {
+            do {
+                // 調用圖片分析服務來分析文字輸入
+                let results = try await imageAnalysisService.analyzeFoodText(name)
+                
+                await MainActor.run {
+                    print("🔍 AddFoodSheet - handleManualFoodInput: results.isEmpty = \(results.isEmpty)")
+                    if results.isEmpty {
+                        // 沒有分析出任何食材，直接顯示 alert
+                        showNoFoodDetectedAlert()
+                        isAnalyzing = false
+                        print("🔍 AddFoodSheet - handleManualFoodInput: showNoFoodDetectedAlert called, showFoodConfirmation = \(showFoodConfirmation)")
+                    } else {
+                        analyzedFoods = results
+                        isAnalyzing = false
+                        print("🔍 AddFoodSheet - handleManualFoodInput: analyzedFoods set, count = \(analyzedFoods.count)")
+                        // 延遲一點點時間確保 analyzedFoods 已經設置
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            confirmationData = ConfirmationData(
+                                analyzedFoods: results,
+                                capturedImages: []
+                            )
+                            print("🔍 AddFoodSheet - handleManualFoodInput: confirmationData set")
+                        }
+                    }
+                }
+            } catch {
+                print("❌ AI 分析失敗: \(error)")
+                
+                // 如果 API 失敗，使用預設格式
+                await MainActor.run {
+                    let fallbackFood = AnalyzedFood(
+                        name: name,
+                        emoji: "🥬",
+                        location: .fridge
+                    )
+                    analyzedFoods = [fallbackFood]
+                    isAnalyzing = false
+                    print("🔍 AddFoodSheet - handleManualFoodInput (catch): analyzedFoods set, count = \(analyzedFoods.count)")
+                    // 延遲一點點時間確保 analyzedFoods 已經設置
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        confirmationData = ConfirmationData(
+                            analyzedFoods: [fallbackFood],
+                            capturedImages: []
+                        )
+                        print("🔍 AddFoodSheet - handleManualFoodInput (catch): confirmationData set")
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - 輔助方法
+    private func showNoFoodDetectedAlert() {
+        showNoFoodAlert = true
     }
     
     // MARK: - 計算屬性
@@ -417,21 +526,17 @@ struct AddFoodSheet: View {
                         VStack(spacing: 8) {
                             Image(systemName: "photo.on.rectangle")
                                 .font(.title)
-                                .foregroundStyle(Color.olive)
+                                .foregroundStyle(.white)
                             
                             Text("相簿")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                                .foregroundStyle(Color.olive)
+                                .foregroundStyle(.white)
                         }
                         .frame(width: 80, height: 80)
                         .background(
                             Circle()
-                                .fill(Color.olive.opacity(0.1))
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.olive, lineWidth: 2)
-                                )
+                                .fill(Color.olive)
                         )
                     }
                     .buttonStyle(.plain)

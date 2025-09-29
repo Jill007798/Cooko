@@ -3,10 +3,11 @@ import SwiftUI
 struct FeaturedRecipeCard: View {
     let recipe: Recipe
     let onTap: () -> Void
+    let onToggleFeatured: (() -> Void)?
     
     var body: some View {
         Button(action: onTap) {
-            ZStack {
+            ZStack(alignment: .topTrailing) {
                 // 玻璃質感背景
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(GlassEffect.cardMaterial)
@@ -31,6 +32,7 @@ struct FeaturedRecipeCard: View {
                 HStack(alignment: .top, spacing: 16) {
                     // 左側：標題和標籤
                     VStack(alignment: .leading, spacing: 12) {
+                        // 標題行
                         Text(recipe.title)
                             .font(.title3)
                             .fontWeight(.bold)
@@ -38,6 +40,7 @@ struct FeaturedRecipeCard: View {
                             .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 1)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         HStack(spacing: 8) {
                             if let firstTag = recipe.tags.first {
@@ -97,6 +100,24 @@ struct FeaturedRecipeCard: View {
                     .frame(width: 120, alignment: .leading)
                 }
                 .padding(16)
+                
+                // 星星按鈕 - 整個卡片的右上角
+                if let onToggleFeatured = onToggleFeatured {
+                    Button(action: onToggleFeatured) {
+                        Image(systemName: recipe.isFeatured ? "star.fill" : "star")
+                            .font(.title3)
+                            .foregroundStyle(recipe.isFeatured ? Color(hex: "#FFA07A") : Color.warmGray)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(.white.opacity(0.8))
+                                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(12)
+                    .zIndex(10)
+                }
             }
             .frame(maxWidth: .infinity, minHeight: 160)
         }
@@ -107,25 +128,39 @@ struct FeaturedRecipeCard: View {
 #Preview {
     ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 16) {
-            FeaturedRecipeCard(recipe: Recipe(
-                title: "完美蛋炒飯",
-                ingredients: ["雞蛋", "白米", "洋蔥", "橄欖油", "鹽"],
-                steps: ["1. 熱鍋下油", "2. 炒散雞蛋", "3. 加入洋蔥炒香", "4. 倒入白飯炒勻"],
-                tags: ["經典美味", "15分鐘"],
-                tip: "用隔夜飯炒更香！"
-            )) {
-                // Preview action
-            }
+            FeaturedRecipeCard(
+                recipe: Recipe(
+                    title: "完美蛋炒飯",
+                    ingredients: ["雞蛋", "白米", "洋蔥", "橄欖油", "鹽"],
+                    steps: ["1. 熱鍋下油", "2. 炒散雞蛋", "3. 加入洋蔥炒香", "4. 倒入白飯炒勻"],
+                    tags: ["經典美味", "15分鐘"],
+                    tip: "用隔夜飯炒更香！",
+                    isFeatured: true
+                ),
+                onTap: {
+                    // Preview action
+                },
+                onToggleFeatured: {
+                    // Preview toggle action
+                }
+            )
             
-            FeaturedRecipeCard(recipe: Recipe(
-                title: "清爽蔬菜沙拉",
-                ingredients: ["生菜", "番茄", "胡蘿蔔", "橄欖油"],
-                steps: ["1. 蔬菜洗淨切絲", "2. 調製油醋醬", "3. 拌勻即可"],
-                tags: ["超健康", "5分鐘"],
-                tip: "新鮮蔬菜最美味！"
-            )) {
-                // Preview action
-            }
+            FeaturedRecipeCard(
+                recipe: Recipe(
+                    title: "清爽蔬菜沙拉",
+                    ingredients: ["生菜", "番茄", "胡蘿蔔", "橄欖油"],
+                    steps: ["1. 蔬菜洗淨切絲", "2. 調製油醋醬", "3. 拌勻即可"],
+                    tags: ["超健康", "5分鐘"],
+                    tip: "新鮮蔬菜最美味！",
+                    isFeatured: false
+                ),
+                onTap: {
+                    // Preview action
+                },
+                onToggleFeatured: {
+                    // Preview toggle action
+                }
+            )
         }
         .padding(.horizontal, 20)
     }

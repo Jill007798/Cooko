@@ -5,6 +5,14 @@ struct RecipeDetailView: View {
     let onDismiss: () -> Void
     let onToggleFeatured: (() -> Void)?
     @State private var showGuidedMode = false
+    @State private var isFeatured: Bool
+    
+    init(recipe: Recipe, onDismiss: @escaping () -> Void, onToggleFeatured: (() -> Void)?) {
+        self.recipe = recipe
+        self.onDismiss = onDismiss
+        self.onToggleFeatured = onToggleFeatured
+        self._isFeatured = State(initialValue: recipe.isFeatured)
+    }
     
     var body: some View {
         NavigationView {
@@ -43,41 +51,28 @@ struct RecipeDetailView: View {
                     VStack(spacing: 24) {
                         // 食譜標題區域
                         VStack(spacing: 16) {
-                            HStack {
+                            // 標題和精選按鈕同一行
+                            HStack(alignment: .top) {
                                 Text(recipe.title)
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
                                     .foregroundStyle(Color.charcoal)
                                     .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity)
                                 
-                                Spacer()
-                                
-                                // 加入精選按鈕
-                                if let onToggleFeatured = onToggleFeatured {
-                                    Button(action: onToggleFeatured) {
-                                        HStack(spacing: 6) {
-                                            Image(systemName: recipe.isFeatured ? "star.fill" : "star")
-                                                .font(.title3)
-                                                .foregroundStyle(recipe.isFeatured ? Color.yellow : Color.warmGray)
-                                            
-                                            Text(recipe.isFeatured ? "已精選" : "加入精選")
-                                                .font(.subheadline)
-                                                .fontWeight(.medium)
-                                                .foregroundStyle(recipe.isFeatured ? Color.yellow : Color.olive)
-                                        }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .background(
-                                            Capsule()
-                                                .fill(recipe.isFeatured ? Color.yellow.opacity(0.1) : Color.olive.opacity(0.1))
-                                                .overlay(
-                                                    Capsule()
-                                                        .stroke(recipe.isFeatured ? Color.yellow.opacity(0.3) : Color.olive.opacity(0.3), lineWidth: 1)
-                                                )
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
+                                // 精選按鈕 - 靠右
+                                Button(action: {
+                                    isFeatured.toggle()
+                                    onToggleFeatured?()
+                                }) {
+                                    Image(systemName: isFeatured ? "star.fill" : "star")
+                                        .font(.title2)
+                                        .foregroundStyle(isFeatured ? Color(hex: "#FFA07A") : Color.warmGray)
+                                        .frame(width: 44, height: 44) // 增加點擊區域
+                                        .contentShape(Rectangle()) // 確保整個區域都可點擊
                                 }
+                                .buttonStyle(.plain)
+                                .zIndex(10) // 確保按鈕在最上層
                             }
                             
                             // 標籤

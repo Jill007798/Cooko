@@ -29,6 +29,10 @@ final class RecipeViewModel: ObservableObject {
                 self.errorMessage = "無法生成食譜建議"
             }
         }
+        
+        // 生成新食譜後，重新加載精選狀態
+        loadFeaturedRecipes()
+        
         isLoading = false
     }
     

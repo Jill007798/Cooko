@@ -2,7 +2,7 @@ import SwiftUI
 
 struct FridgeView: View {
     @StateObject var vm = FridgeViewModel()
-    @StateObject var recipeVM = RecipeViewModel()
+    @EnvironmentObject var recipeVM: RecipeViewModel
     @StateObject var toolsVM = ToolsViewModel()
     @State private var showAdd = false
     @State private var showAddFoodSheet = false
@@ -301,9 +301,15 @@ struct FridgeView: View {
                                 if !recipeVM.featuredRecipes.isEmpty {
                                     VStack(spacing: 12) {
                                         ForEach(Array(recipeVM.featuredRecipes.prefix(3))) { recipe in
-                                            FeaturedRecipeCard(recipe: recipe) {
-                                                showRecipeDetail = recipe
-                                            }
+                                            FeaturedRecipeCard(
+                                                recipe: recipe,
+                                                onTap: {
+                                                    showRecipeDetail = recipe
+                                                },
+                                                onToggleFeatured: {
+                                                    recipeVM.toggleFeatured(recipe)
+                                                }
+                                            )
                                         }
                                     }
                                     .padding(.horizontal, 20)
@@ -377,10 +383,7 @@ struct FridgeView: View {
                             
                             Text("生成專屬食譜")
                                 .fontWeight(.bold)
-                                .font(.headline)
-                            
-                            Text("🍳")
-                                .font(.title2)
+                                .font(.title3)
                         }
                         .foregroundStyle(.white)
                         .padding(.horizontal, 32)
@@ -389,6 +392,7 @@ struct FridgeView: View {
                             Capsule()
                                 .fill(Color.olive)
                         )
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
                     .zIndex(3) // 生成按鈕在最上層
                     
@@ -426,6 +430,7 @@ struct FridgeView: View {
             RecipesView(foods: vm.items) {
                 showRecipesPage = false
             }
+            .environmentObject(recipeVM)
         }
         .sheet(item: $showRecipeDetail) { recipe in
             RecipeDetailView(

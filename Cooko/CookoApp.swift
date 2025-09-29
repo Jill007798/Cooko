@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct CookoApp: App {
+    @StateObject private var recipeVM = RecipeViewModel()
+    
     var body: some Scene {
         WindowGroup {
             FridgeView()
+                .environmentObject(recipeVM)
                 .preferredColorScheme(.light)
         }
     }

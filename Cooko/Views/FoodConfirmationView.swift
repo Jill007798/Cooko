@@ -13,7 +13,7 @@ struct FoodConfirmationView: View {
         onConfirm: @escaping ([AnalyzedFood]) -> Void
     ) {
         self._isPresented = isPresented
-        self._analyzedFoods = State(initialValue: analyzedFoods)
+        self._analyzedFoods = State(wrappedValue: analyzedFoods)
         self.capturedImages = capturedImages
         self.onConfirm = onConfirm
     }
@@ -37,6 +37,10 @@ struct FoodConfirmationView: View {
             }
             .background(Color(hex: "#F8F9FA"))
             .navigationBarHidden(true)
+        }
+        .onAppear {
+            print("🔍 FoodConfirmationView - onAppear: analyzedFoods count = \(analyzedFoods.count)")
+            print("🔍 FoodConfirmationView - onAppear: analyzedFoods = \(analyzedFoods.map { $0.name })")
         }
     }
     
@@ -128,9 +132,9 @@ struct FoodConfirmationView: View {
             Button(action: {
                 analyzedFoods[index].isSelected.toggle()
             }) {
-                Image(systemName: food.isSelected ? "checkmark.circle.fill" : "circle")
+                Image(systemName: analyzedFoods[index].isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundStyle(food.isSelected ? Color.olive : Color.warmGray)
+                    .foregroundStyle(analyzedFoods[index].isSelected ? Color.olive : Color.warmGray)
             }
             .buttonStyle(.plain)
             
@@ -150,25 +154,15 @@ struct FoodConfirmationView: View {
             }
             
             Spacer()
-            
-            // 刪除按鈕
-            Button(action: {
-                analyzedFoods.remove(at: index)
-            }) {
-                Image(systemName: "trash")
-                    .font(.subheadline)
-                    .foregroundStyle(.red)
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(food.isSelected ? Color.olive.opacity(0.1) : Color.gray.opacity(0.05))
+                .fill(analyzedFoods[index].isSelected ? Color.olive.opacity(0.1) : Color.gray.opacity(0.05))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(food.isSelected ? Color.olive.opacity(0.3) : Color.clear, lineWidth: 1)
+                        .stroke(analyzedFoods[index].isSelected ? Color.olive.opacity(0.3) : Color.clear, lineWidth: 1)
                 )
         )
     }
